@@ -17,7 +17,7 @@ html {
 
 #frame {
     color: #111;
-    background-color: #EEE;
+    background-color: #EFEBD6;
     @include aspect-ratio(854, 480);
 }
 
