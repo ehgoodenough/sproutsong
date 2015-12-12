@@ -97,32 +97,32 @@ class Gardener {
     constructor() {
         this.position = new Space({
             x: TILE * 5, y: TILE * 10,
-            w: TILE * 1, h: TILE * 1
+            w: TILE, h: TILE
         })
 
         this.direction = {x: 0, y: +1}
         this.velocity = {x: 0, y: 0}
-        this.speed = 0.25 //pixels per millisecond
+        this.speed = 0.05 //pixels per millisecond
     }
     update(tick) {
         if(Input.isDown("W")
         || Input.isDown("<up>")) {
-            this.velocity.y = -1 * this.speed
+            this.velocity.y -= this.speed * tick
             this.direction = {x: 0, y: -1}
         }
         if(Input.isDown("S")
         || Input.isDown("<down>")) {
-            this.velocity.y = +1 * this.speed
+            this.velocity.y += this.speed * tick
             this.direction = {x: 0, y: +1}
         }
         if(Input.isDown("A")
         || Input.isDown("<left>")) {
-            this.velocity.x = -1 * this.speed
+            this.velocity.x -= this.speed * tick
             this.direction = {x: -1, y: 0}
         }
         if(Input.isDown("D")
         || Input.isDown("<right>")) {
-            this.velocity.x = +1 * this.speed
+            this.velocity.x += this.speed * tick
             this.direction = {x: +1, y: 0}
         }
 
@@ -143,38 +143,13 @@ class Gardener {
         this.position.x += this.velocity.x * tick
         this.position.y += this.velocity.y * tick
 
-        if(this.velocity.x > 0) {
-            this.velocity.x *= 0.7
-            if(this.velocity.x <= 0.01) {
-                this.velocity.x = 0
-            }
-        } else if(this.velocity.x < 0) {
-            this.velocity.x *= 0.7
-            if(this.velocity.x >= -0.01) {
-                this.velocity.x = 0
-            }
-        }
-        if(this.velocity.y > 0) {
-            this.velocity.y *= 0.7
-            if(this.velocity.y <= 0.01) {
-                this.velocity.y = 0
-            }
-        } else if(this.velocity.y < 0) {
-            this.velocity.y *= 0.7
-            if(this.velocity.y >= -0.01) {
-                this.velocity.y = 0
-            }
-        }
+        this.velocity.x = 0
+        this.velocity.y = 0
 
         if(Input.isJustDown("<space>")) {
-            //check here if you have seeds
             if(game.world.getTile(this.position).fertile) {
-                var tx = this.position.x
-                var ty = this.position.y
-                tx += TILE * this.direction.x
-                ty += TILE * this.direction.y
-                tx = Math.floor(tx / TILE)
-                ty = Math.floor(ty / TILE)
+                var tx = this.position.tx0 + this.direction.x
+                var ty = this.position.ty0 + this.direction.y
                 game.plants.add(new Plant({
                     position: new Space({
                         tx0: tx, ty0: ty,
@@ -190,9 +165,11 @@ class Gardener {
                 position: "absolute",
                 width: this.position.w + "em",
                 height: this.position.h + "em",
-                top: Math.round(this.position.y0) + "em",
-                left: Math.round(this.position.x0) + "em",
-                backgroundColor: "#0C0"
+                top: (this.position.ty0 * TILE) + "em",
+                left: (this.position.tx0 * TILE) + "em",
+                backgroundColor: "purple",
+                transitionProperty: "top left",
+                transitionDuration: "0.2s",
             }}/>
         )
     }
@@ -275,7 +252,7 @@ class World {
                             x0: tx * TILE,
                             y0: ty * TILE,
                         }),
-                        fertile: gid - 1 == 3,
+                        fertile: gid - 1 == 18 || gid - 1 == 19,
                         gid: gid - 1 //off by one
                     })
                 })
@@ -319,8 +296,8 @@ class World {
                             Object.keys(this.tilemap).map((key) => {
                                 var tile = this.tilemap[key]
                                 canvas2d.drawImage(this.tileset,
-                                    (tile.gid % this.tileset.width) * TILE,
-                                    Math.floor(tile.gid / this.tileset.width) * TILE,
+                                    (tile.gid * TILE) % this.tileset.width,
+                                    Math.floor((tile.gid * TILE) / this.tileset.width) * TILE,
                                     TILE, TILE,
                                     tile.position.tx * TILE,
                                     tile.position.ty * TILE,
@@ -399,11 +376,10 @@ class InGameState {
     render() {
         return (
             <div id="in-game-state">
-                <div id="camera" style={game.camera.render()}>
+                {/*<div id="camera" style={game.camera.render()}>*/}
                     {game.world.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
-                </div>
             </div>
         )
     }
