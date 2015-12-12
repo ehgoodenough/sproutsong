@@ -82,22 +82,17 @@ class Tile {
     }
 }
 
-var assets = new Object()
-assets["./images/farm.png"] = require("./images/farm.png")
-
 class World {
     constructor(tilemap) {
         this.tileset = new Array()
         tilemap.tilesets.forEach((tileset) => {
             var image = new Image()
-            image.src = assets["./images/farm.png"]
+            image.src = tileset.image
             image.onload = () => {
                 var canvas = document.createElement("canvas")
                 var canvas2d = canvas.getContext("2d")
-
                 canvas.width = TILE
                 canvas.height = TILE
-
                 for(var y = 0; y < image.height; y += TILE) {
                     for(var x = 0; x < image.width; x += TILE) {
                         canvas2d.drawImage(image, x, y, TILE, TILE, 0, 0, TILE, TILE)
@@ -124,7 +119,7 @@ class World {
 
 var game = window.game = new Object()
 game.gardener = new Gardener()
-game.world = new World(require("./tilemaps/farm.json"))
+game.world = new World(require("./tilemaps/farm.tiled.json"))
 
 class InGameState {
     render() {
