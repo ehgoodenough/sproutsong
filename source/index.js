@@ -77,7 +77,7 @@ class Gardener {
 class Tile {
     constructor(data) {
         for(var key in data) {
-            this[key] = data
+            this[key] = data[key]
         }
     }
 }
@@ -101,19 +101,39 @@ class World {
                 }
             }
         })
-        this.tiles = new Object()
+        this.tilemap = new Object()
         tilemap.layers.forEach((layer) => {
             if(layer.type === "tilelayer") {
                 layer.data.forEach((gid, index) => {
                     var tx = index % layer.width
                     var ty = Math.floor(index / layer.width)
-                    this.tiles[tx + "x" + ty] = new Tile({
+                    this.tilemap[tx + "x" + ty] = new Tile({
                         position: {tx: tx, ty: ty},
                         gid: gid - 1 //off by one
                     })
                 })
             }
         })
+    }
+    render() {
+        return (
+            <div id="world">
+                {Object.keys(this.tilemap).map((key) => {
+                    var tile = this.tilemap[key]
+                    return (
+                        <div key={key} style={{
+                            width: TILE + "em",
+                            height: TILE + "em",
+                            position: "absolute",
+                            top: tile.position.ty * TILE + "em",
+                            left: tile.position.tx * TILE + "em",
+                            backgroundImage: this.tileset[tile.gid] ? "url(" + this.tileset[tile.gid] + ")" : "",
+                            backgroundSize: TILE + "em",
+                        }}/>
+                    )
+                })}
+            </div>
+        )
     }
 }
 
@@ -125,6 +145,7 @@ class InGameState {
     render() {
         return (
             <div id="in-game-state">
+                {game.world.render()}
                 {game.gardener.render()}
             </div>
         )
