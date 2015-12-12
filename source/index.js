@@ -60,10 +60,10 @@ class Space {
         return Math.floor(this.y0 / TILE)
     }
     get tx1() {
-        return Math.ceil(this.x1 / TILE)
+        return Math.floor(this.x1 / TILE)
     }
     get ty1() {
-        return Math.ceil(this.y1 / TILE)
+        return Math.floor(this.y1 / TILE)
     }
     set tx(tx) {
         this.x = tx * TILE
@@ -100,6 +100,7 @@ class Gardener {
             w: TILE * 1, h: TILE * 1
         })
 
+        this.direction = {x: 0, y: +1}
         this.velocity = {x: 0, y: 0}
         this.speed = 0.25 //pixels per millisecond
     }
@@ -107,18 +108,22 @@ class Gardener {
         if(Input.isDown("W")
         || Input.isDown("<up>")) {
             this.velocity.y = -1 * this.speed
+            this.direction = {x: 0, y: -1}
         }
         if(Input.isDown("S")
         || Input.isDown("<down>")) {
             this.velocity.y = +1 * this.speed
+            this.direction = {x: 0, y: +1}
         }
         if(Input.isDown("A")
         || Input.isDown("<left>")) {
             this.velocity.x = -1 * this.speed
+            this.direction = {x: -1, y: 0}
         }
         if(Input.isDown("D")
         || Input.isDown("<right>")) {
             this.velocity.x = +1 * this.speed
+            this.direction = {x: +1, y: 0}
         }
 
         if(this.position.x0 + this.velocity.x < 0) {
@@ -139,23 +144,23 @@ class Gardener {
         this.position.y += this.velocity.y * tick
 
         if(this.velocity.x > 0) {
-            this.velocity.x *= 0.8
+            this.velocity.x *= 0.7
             if(this.velocity.x <= 0.01) {
                 this.velocity.x = 0
             }
         } else if(this.velocity.x < 0) {
-            this.velocity.x *= 0.8
+            this.velocity.x *= 0.7
             if(this.velocity.x >= -0.01) {
                 this.velocity.x = 0
             }
         }
         if(this.velocity.y > 0) {
-            this.velocity.y *= 0.8
+            this.velocity.y *= 0.7
             if(this.velocity.y <= 0.01) {
                 this.velocity.y = 0
             }
         } else if(this.velocity.y < 0) {
-            this.velocity.y *= 0.8
+            this.velocity.y *= 0.7
             if(this.velocity.y >= -0.01) {
                 this.velocity.y = 0
             }
@@ -164,10 +169,15 @@ class Gardener {
         if(Input.isJustDown("<space>")) {
             //check here if you have seeds
             if(game.world.getTile(this.position).fertile) {
+                var tx = this.position.x
+                var ty = this.position.y
+                tx += TILE * this.direction.x
+                ty += TILE * this.direction.y
+                tx = Math.floor(tx / TILE)
+                ty = Math.floor(ty / TILE)
                 game.plants.add(new Plant({
                     position: new Space({
-                        tx0: this.position.tx,
-                        ty0: this.position.ty,
+                        tx0: tx, ty0: ty,
                         w: TILE, h: TILE,
                     })
                 }))
@@ -238,7 +248,7 @@ class Plant {
                 left: this.position.x0 + "em",
                 width: this.position.w + "em",
                 height: this.position.h + "em",
-                backgroundColor: "red",
+                backgroundColor: "#C00",
             }}/>
         )
     }
