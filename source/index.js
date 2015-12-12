@@ -311,14 +311,17 @@ class World {
 }
 
 class Camera {
-    constructor() {
+    constructor(target) {
+        this.target = target
         this.position = new Space({
+            x: this.target.position.x,
+            y: this.target.position.y,
             w: WIDTH, h: HEIGHT
         })
     }
     update(tick) {
-        this.position.x = game.gardener.position.x
-        this.position.y = game.gardener.position.y
+        this.position.x = this.target.position.x
+        this.position.y = this.target.position.y
 
         if(this.position.x0 < 0) {
             this.position.x0 = 0
@@ -343,7 +346,7 @@ class Camera {
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
-game.camera = new Camera()
+game.camera = new Camera(game.gardener)
 
 class InGameState {
     render() {
