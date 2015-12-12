@@ -94,7 +94,7 @@ class Gardener {
 
         this.position = new Space({
             x: TILE * 5, y: TILE * 10,
-            w: TILE, h: TILE
+            w: TILE * 1, h: TILE * 1
         })
 
         this.velocity = {x: 0, y: 0}
@@ -118,6 +118,20 @@ class Gardener {
             this.velocity.x = +1 * this.speed
         }
 
+        if(this.position.x0 + this.velocity.x < 0) {
+            this.position.x0 = 0
+            this.velocity.x = 0
+        } if(this.position.x1 + this.velocity.x > game.world.width) {
+            this.position.x1 = game.world.width
+            this.velocity.x = 0
+        } if(this.position.y0 + this.velocity.y < 0) {
+            this.position.y0 = 0
+            this.velocity.y = 0
+        } if(this.position.y1 + this.velocity.y > game.world.height) {
+            this.position.y1 = game.world.height
+            this.velocity.y = 0
+        }
+
         game.world.getTiles(this.position.toSpace({x: this.velocity.x})).some((tile) => {
             if(tile.unpassable == true) {
                 if(this.velocity.x < 0) {
@@ -125,7 +139,6 @@ class Gardener {
                 } else if(this.velocity.x > 0) {
                     this.position.x1 = tile.position.x0
                 }
-                console.log("!")
                 this.velocity.x = 0
                 return true
             }
@@ -167,7 +180,6 @@ class Gardener {
                 this.velocity.y = 0
             }
         }
-        console.log(this.velocity)
     }
     render() {
         return (
@@ -240,7 +252,6 @@ class World {
                             x0: tx * TILE,
                             y0: ty * TILE,
                         }),
-                        unpassable: gid - 1 == 0,
                         gid: gid - 1 //off by one
                     })
                 })
