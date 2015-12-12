@@ -4,7 +4,7 @@ var Loop = require("./scripts/Loop")
 var Input = require("./scripts/Input")
 var Renderer = require("./scripts/Renderer")
 
-var WIDTH = 854, HEIGHT = 480
+var WIDTH = 854, HEIGHT = 480, TILE = 32
 
 class Gardener {
     constructor() {
@@ -36,7 +36,7 @@ class Gardener {
 
         this.position.x += this.velocity.x * tick
         this.position.y += this.velocity.y * tick
-        
+
         if(this.velocity.x > 0) {
             this.velocity.x *= 0.8
             if(this.velocity <= 0.1) {
@@ -74,8 +74,57 @@ class Gardener {
     }
 }
 
-var game = new Object()
+class Tile {
+    constructor(data) {
+        for(var key in data) {
+            this[key] = data
+        }
+    }
+}
+
+var assets = new Object()
+assets["./images/farm.png"] = require("./images/farm.png")
+
+class World {
+    constructor(tilemap) {
+        this.tileset = new Array()
+        tilemap.tilesets.forEach((tileset) => {
+            var image = new Image()
+            image.src = assets["./images/farm.png"]
+            image.onload = () => {
+                var canvas = document.createElement("canvas")
+                var canvas2d = canvas.getContext("2d")
+
+                canvas.width = TILE
+                canvas.height = TILE
+
+                for(var y = 0; y < image.height; y += TILE) {
+                    for(var x = 0; x < image.width; x += TILE) {
+                        canvas2d.drawImage(image, x, y, TILE, TILE, 0, 0, TILE, TILE)
+                        this.tileset.push(canvas.toDataURL())
+                    }
+                }
+            }
+        })
+        this.tiles = new Object()
+        tilemap.layers.forEach((layer) => {
+            if(layer.type === "tilelayer") {
+                layer.data.forEach((gid, index) => {
+                    var tx = index % layer.width
+                    var ty = Math.floor(index / layer.width)
+                    this.tiles[tx + "x" + ty] = new Tile({
+                        position: {tx: tx, ty: ty},
+                        gid: gid - 1 //off by one
+                    })
+                })
+            }
+        })
+    }
+}
+
+var game = window.game = new Object()
 game.gardener = new Gardener()
+game.world = new World(require("./tilemaps/farm.json"))
 
 class InGameState {
     render() {
