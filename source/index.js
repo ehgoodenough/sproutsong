@@ -1,4 +1,5 @@
 var React = require("react")
+var ShortID = require("shortid")
 
 var Loop = require("./scripts/Loop")
 var Input = require("./scripts/Input")
@@ -13,6 +14,11 @@ class Space {
         this.w = 0
         this.h = 0
 
+        if(that.w) {
+            this.w = that.w
+        } if(that.h) {
+            this.h = that.h
+        }
         for(var key in that) {
             this[key] = that[key]
         }
@@ -89,9 +95,6 @@ class Space {
 
 class Gardener {
     constructor() {
-        this.width = 32
-        this.height = 32
-
         this.position = new Space({
             x: TILE * 5, y: TILE * 10,
             w: TILE * 1, h: TILE * 1
@@ -132,29 +135,6 @@ class Gardener {
             this.velocity.y = 0
         }
 
-        game.world.getTiles(this.position.toSpace({x: this.velocity.x})).some((tile) => {
-            if(tile.unpassable == true) {
-                if(this.velocity.x < 0) {
-                    this.position.x0 = tile.position.x1
-                } else if(this.velocity.x > 0) {
-                    this.position.x1 = tile.position.x0
-                }
-                this.velocity.x = 0
-                return true
-            }
-        })
-        game.world.getTiles(this.position.toSpace(this.velocity)).some((tile) => {
-            if(tile.unpassable == true) {
-                if(this.velocity.y < 0) {
-                    this.position.y0 = tile.position.y1
-                } else if(this.velocity.y > 0) {
-                    this.position.y1 = tile.position.y0
-                }
-                this.velocity.y = 0
-                return true
-            }
-        })
-
         this.position.x += this.velocity.x * tick
         this.position.y += this.velocity.y * tick
 
@@ -180,15 +160,28 @@ class Gardener {
                 this.velocity.y = 0
             }
         }
+
+        if(Input.isJustDown("<space>")) {
+            //check here if you have seeds
+            if(game.world.getTile(this.position).fertile) {
+                game.plants.add(new Plant({
+                    position: new Space({
+                        tx0: this.position.tx,
+                        ty0: this.position.ty,
+                        w: TILE, h: TILE,
+                    })
+                }))
+            }
+        }
     }
     render() {
         return (
             <div style={{
                 position: "absolute",
-                width: this.width + "em",
-                height: this.height + "em",
-                top: Math.round(this.position.y - (this.height / 2)) + "em",
-                left: Math.round(this.position.x - (this.width / 2)) + "em",
+                width: this.position.w + "em",
+                height: this.position.h + "em",
+                top: Math.round(this.position.y0) + "em",
+                left: Math.round(this.position.x0) + "em",
                 backgroundColor: "#0C0"
             }}/>
         )
@@ -231,6 +224,26 @@ class Canvas extends React.Component {
     }
 }
 
+class Plant {
+    constructor(that) {
+        for(var key in that) {
+            this[key] = that[key]
+        }
+    }
+    render() {
+        return (
+            <div key={this.key} style={{
+                position: "absolute",
+                top: this.position.y0 + "em",
+                left: this.position.x0 + "em",
+                width: this.position.w + "em",
+                height: this.position.h + "em",
+                backgroundColor: "red",
+            }}/>
+        )
+    }
+}
+
 class World {
     constructor(tiled) {
         this.width = tiled.width * TILE
@@ -252,6 +265,7 @@ class World {
                             x0: tx * TILE,
                             y0: ty * TILE,
                         }),
+                        fertile: gid - 1 == 3,
                         gid: gid - 1 //off by one
                     })
                 })
@@ -343,10 +357,33 @@ class Camera {
     }
 }
 
+class Collection {
+    add(entity) {
+        entity.key = ShortID.generate()
+        this[entity.key] = entity
+    }
+    remove(entity) {
+        delete this[entity.id]
+    }
+    render() {
+        return (
+            <div>
+                {Object.keys(this).map((key) => {
+                    return this[key].render()
+                })}
+            </div>
+        )
+    }
+    update(tick) {
+        return
+    }
+}
+
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
+game.plants = new Collection("plants")
 
 class InGameState {
     render() {
@@ -354,6 +391,7 @@ class InGameState {
             <div id="in-game-state">
                 <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
+                    {game.plants.render()}
                     {game.gardener.render()}
                 </div>
             </div>
@@ -362,6 +400,7 @@ class InGameState {
     update(tick) {
         game.gardener.update(tick)
         game.camera.update(tick)
+        game.plants.update(tick)
     }
 }
 
