@@ -310,21 +310,55 @@ class World {
     }
 }
 
+class Camera {
+    constructor() {
+        this.position = new Space({
+            w: WIDTH, h: HEIGHT
+        })
+    }
+    update(tick) {
+        this.position.x = game.gardener.position.x
+        this.position.y = game.gardener.position.y
+
+        if(this.position.x0 < 0) {
+            this.position.x0 = 0
+        } if(this.position.x1 > game.world.width) {
+            this.position.x1 = game.world.width
+        } if(this.position.y0 < 0) {
+            this.position.y0 = 0
+        } if(this.position.y1 > game.world.height) {
+            this.position.y1 = game.world.height
+        }
+    }
+    render() {
+        return {
+            position: "absolute",
+            top: -1 * this.position.y0 + "em",
+            left: -1 * this.position.x0 + "em",
+            //fontSize: this.position.z + "em"
+        }
+    }
+}
+
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
+game.camera = new Camera()
 
 class InGameState {
     render() {
         return (
             <div id="in-game-state">
-                {game.world.render()}
-                {game.gardener.render()}
+                <div id="camera" style={game.camera.render()}>
+                    {game.world.render()}
+                    {game.gardener.render()}
+                </div>
             </div>
         )
     }
     update(tick) {
         game.gardener.update(tick)
+        game.camera.update(tick)
     }
 }
 
