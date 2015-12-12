@@ -1,0 +1,20 @@
+@mixin aspect-ratio($width, $height) {
+    top: 0rem;
+    left: 0rem;
+    right: 0rem;
+    bottom: 0rem;
+    margin: auto;
+    position: fixed;
+    overflow: hidden;
+
+    @media(min-aspect-ratio: #{$width + "/" + $height}) {
+        font-size: (($width/$height)*100vh)/$width;
+        width: ($width/$height)*100vh;
+        height: 100vh;
+    }
+    @media(max-aspect-ratio: #{$width + "/" + $height}) {
+        font-size: (($height/$width)*100vw)/$height;
+        height: ($height/$width)*100vw;
+        width: 100vw;
+    }
+}
