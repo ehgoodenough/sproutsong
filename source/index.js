@@ -17,7 +17,6 @@ class Gardener {
         this.speed = 0.25 //pixels per millisecond
     }
     update(tick) {
-        console.log(tick)
         if(Input.isDown("W")
         || Input.isDown("<up>")) {
             this.velocity.y = -1 * this.speed
@@ -38,8 +37,31 @@ class Gardener {
         this.position.x += this.velocity.x * tick
         this.position.y += this.velocity.y * tick
 
-        this.velocity.x = 0
-        this.velocity.y = 0
+        // var friction = 0.0000000000000000000001
+        // this.velocity.x *= Math.pow(friction, tick / 1000)
+        // this.velocity.y *= Math.pow(friction, tick / 1000)
+        if(this.velocity.x > 0) {
+            this.velocity.x *= 0.8
+            if(this.velocity <= 0.1) {
+                this.velocity.x = 0
+            }
+        } else if(this.velocity.x < 0) {
+            this.velocity.x *= 0.8
+            if(this.velocity >= -0.1) {
+                this.velocity.x = 0
+            }
+        }
+        if(this.velocity.y > 0) {
+            this.velocity.y *= 0.8
+            if(this.velocity <= 0.1) {
+                this.velocity.y = 0
+            }
+        } else if(this.velocity.y < 0) {
+            this.velocity.y *= 0.8
+            if(this.velocity >= -0.1) {
+                this.velocity.y = 0
+            }
+        }
     }
     render() {
         return (
