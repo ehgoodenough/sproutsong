@@ -82,27 +82,45 @@ class Tile {
     }
 }
 
+class Canvas extends React.Component {
+    render() {
+        return (
+            <canvas ref="canvas"
+                width={this.props.width}
+                height={this.props.height}
+                style={{
+                    width: this.props.width + "em",
+                    height: this.props.height + "em",
+                }}/>
+        )
+    }
+    componentDidMount() {
+        this.props.callback(this.refs.canvas)
+    }
+    componentDidUpdate() {
+        this.props.callback(this.refs.canvas)
+    }
+    shouldComponentUpdate() {
+        if(this.props.data.rerender == true) {
+            this.props.data.rerender = false
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 class World {
-    constructor(tilemap) {
-        this.tileset = new Array()
-        tilemap.tilesets.forEach((tileset) => {
-            var image = new Image()
-            image.src = tileset.image
-            image.onload = () => {
-                var canvas = document.createElement("canvas")
-                var canvas2d = canvas.getContext("2d")
-                canvas.width = TILE
-                canvas.height = TILE
-                for(var y = 0; y < image.height; y += TILE) {
-                    for(var x = 0; x < image.width; x += TILE) {
-                        canvas2d.drawImage(image, x, y, TILE, TILE, 0, 0, TILE, TILE)
-                        this.tileset.push(canvas.toDataURL())
-                    }
-                }
-            }
-        })
+    constructor(tiled) {
+        this.width = tiled.width * TILE
+        this.height = tiled.height * TILE
+
+        this.tileset = new Image()
+        this.tileset.src = tiled.tilesets.pop().image
+        this.tileset.onload = () => {this.rerender = true}
+
         this.tilemap = new Object()
-        tilemap.layers.forEach((layer) => {
+        tiled.layers.forEach((layer) => {
             if(layer.type === "tilelayer") {
                 layer.data.forEach((gid, index) => {
                     var tx = index % layer.width
@@ -118,20 +136,25 @@ class World {
     render() {
         return (
             <div id="world">
-                {Object.keys(this.tilemap).map((key) => {
-                    var tile = this.tilemap[key]
-                    return (
-                        <div key={key} style={{
-                            width: TILE + "em",
-                            height: TILE + "em",
-                            position: "absolute",
-                            top: tile.position.ty * TILE + "em",
-                            left: tile.position.tx * TILE + "em",
-                            backgroundImage: this.tileset[tile.gid] ? "url(" + this.tileset[tile.gid] + ")" : "",
-                            backgroundSize: TILE + "em",
-                        }}/>
-                    )
-                })}
+                <Canvas data={this}
+                    width={this.width}
+                    height={this.height}
+                    callback={(canvas) => {
+                        if(this.tileset != undefined) {
+                            var canvas2d = canvas.getContext("2d")
+                            Object.keys(this.tilemap).map((key) => {
+                                var tile = this.tilemap[key]
+                                canvas2d.drawImage(this.tileset,
+                                    (tile.gid % this.tileset.width) * TILE,
+                                    Math.floor(tile.gid / this.tileset.width) * TILE,
+                                    TILE, TILE,
+                                    tile.position.tx * TILE,
+                                    tile.position.ty * TILE,
+                                    TILE, TILE)
+                            })
+                        }
+                    }}
+                />
             </div>
         )
     }
