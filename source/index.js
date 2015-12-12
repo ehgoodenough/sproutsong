@@ -14,12 +14,12 @@ class Space {
         this.w = 0
         this.h = 0
 
-        if(that.w) {
+        that = that || {}
+        if(!!that.w) {
             this.w = that.w
-        } if(that.h) {
+        } if(!!that.h) {
             this.h = that.h
-        }
-        for(var key in that) {
+        } for(var key in that) {
             this[key] = that[key]
         }
     }
@@ -95,89 +95,53 @@ class Space {
 
 class Gardener {
     constructor() {
+        this.direction = new Object()
         this.position = new Space({
-            x: TILE * 5, y: TILE * 10,
-            w: TILE * 1, h: TILE * 1
+            tx0: 4, ty0: 4,
+            w: TILE, h: TILE,
         })
-
-        this.direction = {x: 0, y: +1}
-        this.velocity = {x: 0, y: 0}
-        this.speed = 0.25 //pixels per millisecond
     }
     update(tick) {
-        if(Input.isDown("W")
-        || Input.isDown("<up>")) {
-            this.velocity.y = -1 * this.speed
-            this.direction = {x: 0, y: -1}
-        }
-        if(Input.isDown("S")
-        || Input.isDown("<down>")) {
-            this.velocity.y = +1 * this.speed
-            this.direction = {x: 0, y: +1}
-        }
-        if(Input.isDown("A")
-        || Input.isDown("<left>")) {
-            this.velocity.x = -1 * this.speed
-            this.direction = {x: -1, y: 0}
-        }
-        if(Input.isDown("D")
-        || Input.isDown("<right>")) {
-            this.velocity.x = +1 * this.speed
-            this.direction = {x: +1, y: 0}
+        if(Input.isJustDown("W")
+        || Input.isJustDown("<up>")) {
+            this.direction = {tx: 0, ty: -1}
+            this.position.ty0 -= 1
+        } if(Input.isJustDown("S")
+        || Input.isJustDown("<down>")) {
+            this.direction = {tx: 0, ty: +1}
+            this.position.ty0 += 1
+        } if(Input.isJustDown("A")
+        || Input.isJustDown("<left>")) {
+            this.direction = {tx: -1, ty: 0}
+            this.position.tx0 -= 1
+        } if(Input.isJustDown("D")
+        || Input.isJustDown("<right>")) {
+            this.direction = {tx: +1, ty: 0}
+            this.position.tx0 += 1
         }
 
-        if(this.position.x0 + this.velocity.x < 0) {
+        if(this.position.x0 < 0) {
             this.position.x0 = 0
-            this.velocity.x = 0
-        } if(this.position.x1 + this.velocity.x > game.world.width) {
-            this.position.x1 = game.world.width
-            this.velocity.x = 0
-        } if(this.position.y0 + this.velocity.y < 0) {
+        } if(this.position.x0 > game.world.width) {
+            this.position.x0 = game.world.width
+        } if(this.position.y0 < 0) {
             this.position.y0 = 0
-            this.velocity.y = 0
-        } if(this.position.y1 + this.velocity.y > game.world.height) {
-            this.position.y1 = game.world.height
-            this.velocity.y = 0
-        }
-
-        this.position.x += this.velocity.x * tick
-        this.position.y += this.velocity.y * tick
-
-        if(this.velocity.x > 0) {
-            this.velocity.x *= 0.7
-            if(this.velocity.x <= 0.01) {
-                this.velocity.x = 0
-            }
-        } else if(this.velocity.x < 0) {
-            this.velocity.x *= 0.7
-            if(this.velocity.x >= -0.01) {
-                this.velocity.x = 0
-            }
-        }
-        if(this.velocity.y > 0) {
-            this.velocity.y *= 0.7
-            if(this.velocity.y <= 0.01) {
-                this.velocity.y = 0
-            }
-        } else if(this.velocity.y < 0) {
-            this.velocity.y *= 0.7
-            if(this.velocity.y >= -0.01) {
-                this.velocity.y = 0
-            }
+        } if(this.position.y0 > game.world.height) {
+            this.position.y0 = game.world.height
         }
 
         if(Input.isJustDown("<space>")) {
-            //check here if you have seeds
-            if(game.world.getTile(this.position).fertile) {
-                var tx = this.position.x
-                var ty = this.position.y
-                tx += TILE * this.direction.x
-                ty += TILE * this.direction.y
-                tx = Math.floor(tx / TILE)
-                ty = Math.floor(ty / TILE)
+            var position = this.position.toSpace({
+                x: this.direction.tx * TILE,
+                y: this.direction.ty * TILE
+            })
+            console.log(this.direction, position.tx, position.ty)
+            var tile = game.world.getTile(position)
+            if(tile.isSoil) {
                 game.plants.add(new Plant({
                     position: new Space({
-                        tx0: tx, ty0: ty,
+                        tx0: tile.position.tx0,
+                        ty0: tile.position.ty0,
                         w: TILE, h: TILE,
                     })
                 }))
@@ -186,13 +150,15 @@ class Gardener {
     }
     render() {
         return (
-            <div style={{
-                position: "absolute",
+            <div id="gardener" style={{
+                backgroundColor: "purple",
+                top: this.position.y0 + "em",
+                left: this.position.x0 + "em",
                 width: this.position.w + "em",
                 height: this.position.h + "em",
-                top: Math.round(this.position.y0) + "em",
-                left: Math.round(this.position.x0) + "em",
-                backgroundColor: "#0C0"
+                transitionProperty: "top left",
+                transitionDuration: "0.2s",
+                position: "absolute"
             }}/>
         )
     }
@@ -275,7 +241,7 @@ class World {
                             x0: tx * TILE,
                             y0: ty * TILE,
                         }),
-                        fertile: gid - 1 == 3,
+                        isSoil: gid - 1 == 18 || gid - 1 == 19,
                         gid: gid - 1 //off by one
                     })
                 })
@@ -319,8 +285,8 @@ class World {
                             Object.keys(this.tilemap).map((key) => {
                                 var tile = this.tilemap[key]
                                 canvas2d.drawImage(this.tileset,
-                                    (tile.gid % this.tileset.width) * TILE,
-                                    Math.floor(tile.gid / this.tileset.width) * TILE,
+                                    (tile.gid * TILE) % this.tileset.width,
+                                    Math.floor((tile.gid * TILE) / this.tileset.width) * TILE,
                                     TILE, TILE,
                                     tile.position.tx * TILE,
                                     tile.position.ty * TILE,
@@ -392,24 +358,23 @@ class Collection {
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
-game.camera = new Camera(game.gardener)
-game.plants = new Collection("plants")
+//game.camera = new Camera(game.gardener)
+game.plants = new Collection()
 
 class InGameState {
     render() {
         return (
             <div id="in-game-state">
-                <div id="camera" style={game.camera.render()}>
+                {/*<div id="camera" style={game.camera.render()}>*/}
                     {game.world.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
-                </div>
             </div>
         )
     }
     update(tick) {
         game.gardener.update(tick)
-        game.camera.update(tick)
+        //game.camera.update(tick)
         game.plants.update(tick)
     }
 }
