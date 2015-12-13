@@ -127,16 +127,46 @@ class Point {
     }
 }
 
+class Shop {
+    constructor() {
+        this.position = new Space({
+            tx0: 21, ty0: 4
+        })
+        this.tw = 5
+        this.th = 4
+    }
+    render() {
+        return (
+            <div style={{
+                top: Math.floor(this.position.ty0 - this.th) * TILE + "em",
+                left: Math.floor(this.position.tx0) * TILE + "em",
+                zIndex: Math.floor(this.position.ty0) * TILE,
+                position: "absolute",
+                width: (this.tw * TILE) + "em",
+                height: (this.th * TILE) + "em",
+                backgroundSize: "contain",
+                backgroundPosition: "bottom",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + images["shop.png"] + ")"
+            }}/>
+        )
+    }
+    update(tick) {
+        return
+    }
+}
+
 class Gardener {
     constructor() {
         this.inventory = new Array()
-        this.direction = new Object()
+        this.direction = {tx: 0, ty: 0}
+        this.velocity = {x: 0, y: 0}
         this.position = new Space({
             tx0: 4, ty0: 4,
             w: TILE, h: TILE,
         })
 
-        this.speed = TILE * 0.01 //pixel per millisecond
+        this.speed = TILE * 0.01
 
         this.gold = 0
     }
@@ -144,21 +174,52 @@ class Gardener {
         if(Input.isDown("W")
         || Input.isDown("<up>")) {
             this.direction = {tx: 0, ty: -1}
-            this.position.y0 -= this.speed * tick
+            this.velocity.y = -1 * this.speed * tick
         } if(Input.isDown("S")
         || Input.isDown("<down>")) {
             this.direction = {tx: 0, ty: +1}
-            this.position.y0 += this.speed * tick
+            this.velocity.y = +1 * this.speed * tick
         } if(Input.isDown("A")
         || Input.isDown("<left>")) {
             this.direction = {tx: -1, ty: 0}
-            this.position.x0 -= this.speed * tick
+            this.velocity.x = -1 * this.speed * tick
         } if(Input.isDown("D")
         || Input.isDown("<right>")) {
             this.direction = {tx: +1, ty: 0}
-            this.position.x0 += this.speed * tick
+            this.velocity.x = +1 * this.speed * tick
         }
 
+        // do not collide with shop.
+        if(this.position.x0 + this.velocity.x >= (game.shop.position.tx0) * TILE
+        && this.position.y0 >= (game.shop.position.ty0 - 1) * TILE
+        && this.position.x0 + this.velocity.x < (game.shop.position.tx0 + game.shop.tw) * TILE
+        && this.position.y0 < (game.shop.position.ty0) * TILE) {
+            this.velocity.x = 0
+        }
+        if(this.position.x0 + this.velocity.x >= (game.shop.position.tx0) * TILE
+        && this.position.y0 + this.velocity.y >= (game.shop.position.ty0 - 1) * TILE
+        && this.position.x0 + this.velocity.x < (game.shop.position.tx0 + game.shop.tw) * TILE
+        && this.position.y0 + this.velocity.y < (game.shop.position.ty0) * TILE) {
+            this.velocity.y = 0
+        }
+
+        // do not collide with world.
+        // world.getTile(this.position.toSpace({x: this.velocity.x})).some((tile) => {
+        //     if(tile.unpassable == true) {
+        //         this.velocity.x = 0
+        //         return true
+        //     }
+        // })
+
+        // translate.
+        this.position.x0 += this.velocity.x
+        this.position.y0 += this.velocity.y
+
+        // deceleration.
+        this.velocity.x = 0
+        this.velocity.y = 0
+
+        // do not leave the world.
         if(this.position.x0 < 0) {
             this.position.x0 = 0
         } if(this.position.x0 > game.world.width - TILE) {
@@ -169,8 +230,10 @@ class Gardener {
             this.position.y0 = game.world.height - TILE
         }
 
+        // get position
         var key = this.position.tx0 + "x" + this.position.ty0
 
+        // harvest plants by walking on them.
         if(!!game.plants[key]) {
             var plant = game.plants[key]
             if(plant.harvestable) {
@@ -179,6 +242,7 @@ class Gardener {
             }
         }
 
+        // sell plants by dropping them off.
         if(!!game.world.tilemap[key]) {
             var tile = game.world.tilemap[key]
             if(tile.isShop) {
@@ -189,6 +253,7 @@ class Gardener {
             }
         }
 
+        // drop seeds on soil.
         if(Input.isDown("<space>")) {
             var position = this.position
             var key = position.tx0 + "x" + position.ty0
@@ -204,15 +269,39 @@ class Gardener {
                 }))
             }
         }
+
+        // can interact with shop
+        if(this.position.tx0 == 21 && this.position.ty0 == 4
+        && this.direction.tx == 0 && this.direction.ty == -1
+        && Input.isJustDown("<space>")) {
+            game.state = new ShoppingState()
+        }
+    }
+    getImage() {
+        if(this.direction.tx == 0 && this.direction.ty == -1) {
+            return images["gardener/backwalk.gif"]
+        } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+            return images["gardener/frontwalk.gif"]
+        } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+            return images["gardener/leftwalk.gif"]
+        } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+            return images["gardener/rightwalk.gif"]
+        } else {
+            return images["gardener/frontwalk.gif"]
+        }
     }
     render() {
         return (
             <div id="gardener" style={{
-                backgroundColor: "purple",
-                top: this.position.ty0 * TILE + "em",
+                backgroundSize: "contain",
+                backgroundPosition: "bottom",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + this.getImage() + ")",
+                top: (this.position.ty0 - 1) * TILE + "em",
                 left: this.position.tx0 * TILE + "em",
                 width: this.position.w + "em",
-                height: this.position.h + "em",
+                height: this.position.h + TILE + "em",
+                zIndex: this.position.ty0 * TILE,
                 transitionProperty: "top left",
                 transitionDuration: "0.2s",
                 position: "absolute"
@@ -232,14 +321,19 @@ class Gardener {
                 backgroundSize: "contain",
             }}>
                 <div style={{
-                    right: 4 + "em",
-                    bottom: 4 + "em",
+                    right: 23 + "em",
+                    bottom: 23 + "em",
                     fontWeight: "bold",
-                    lineHeight: 1 + "em",
                     position: "absolute",
-                    color: "#800"
+                    textAlign: "center",
+                    color: "rgb(185,102,39)"
                 }}>
-                    <span>{this.gold}</span>
+                    <div style={{fontSize: "28em", lineHeight: "1em"}}>
+                        {this.gold}
+                    </div>
+                    <div style={{fontSize: "16em"}}>
+                        GOLD
+                    </div>
                 </div>
             </div>
         )
@@ -247,8 +341,23 @@ class Gardener {
 }
 
 var images = new Object()
+images["shop.png"] = require("./images/shop.png")
 images["gui-back.png"] = require("./images/gui-back.png")
-images["plants.png"] = require("./images/plants.png")
+images["gardener/backwalk.gif"] = require("./images/gardener/backwalk.gif")
+images["gardener/frontwalk.gif"] = require("./images/gardener/frontwalk.gif")
+images["gardener/leftwalk.gif"] = require("./images/gardener/leftwalk.gif")
+images["gardener/rightwalk.gif"] = require("./images/gardener/rightwalk.gif")
+images["plants/rabbit-foot-1.png"] = require("./images/plants/rabbit-foot-1.png")
+images["plants/rabbit-foot-2.png"] = require("./images/plants/rabbit-foot-2.png")
+images["plants/crystal-sprout-1.png"] = require("./images/plants/crystal-sprout-1.png")
+images["plants/crystal-sprout-2.png"] = require("./images/plants/crystal-sprout-2.png")
+images["plants/crystal-sprout-3.png"] = require("./images/plants/crystal-sprout-3.png")
+images["plants/newt-eye-1.png"] = require("./images/plants/newt-eye-1.png")
+images["plants/newt-eye-2.png"] = require("./images/plants/newt-eye-2.png")
+images["plants/newt-eye-3.png"] = require("./images/plants/newt-eye-3.png")
+images["plants/lullaby-lily-1.png"] = require("./images/plants/lullaby-lily-1.png")
+images["plants/lullaby-lily-2.png"] = require("./images/plants/lullaby-lily-2.png")
+images["plants/seed.png"] = require("./images/plants/seed.png")
 
 class Tile {
     constructor(data) {
@@ -480,6 +589,8 @@ game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
+game.shop = new Shop()
+game.gardener.gold = 100
 
 class FarmingState {
     render() {
@@ -487,6 +598,7 @@ class FarmingState {
             <div id="farming-state">
                 <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
+                    {game.shop.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
                 </div>
@@ -533,6 +645,7 @@ class FarmingState {
             game.gardener.update(tick)
             game.camera.update(tick)
             game.plants.update(tick)
+            game.shop.update(tick)
         }
     }
 }
@@ -597,9 +710,9 @@ class AboutState {
                         We are Jam Sandwich!
                     </div>
                     <div>
-                        <a href="http://twitter.com/ehgoodenough" target="_blank">@ehgoodenough</a>
-                        <a href="http://twitter.com/madameberry" target="_blank">@madameberry</a>
-                        <a href="http://twitter.com/mcfunkypants" target="_blank">@mcfunkypants</a>
+                        <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
+                        <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
+                        <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
                     </div>
                     <div>
                         We hope you enjoy the game!
@@ -616,8 +729,162 @@ class AboutState {
     }
 }
 
-game.state = new FarmingState()
-game.state = new TitleState()
+class ShoppingState {
+    constructor() {
+        this.catalog = [
+            {
+                name: "Rabbit Foot",
+                blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
+                price: 2,
+                images: [
+                    images["plants/rabbit-foot-1.png"],
+                    images["plants/rabbit-foot-2.png"]
+                ]
+            },
+            {
+                name: "Crystal Sprout",
+                blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
+                price: 10,
+                images: [
+                    images["plants/crystal-sprout-1.png"],
+                    images["plants/crystal-sprout-2.png"],
+                    images["plants/crystal-sprout-3.png"]
+                ]
+            },
+            {
+                name: "Newt Eye",
+                blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
+                price: 12,
+                images: [
+                    images["plants/newt-eye-1.png"],
+                    images["plants/newt-eye-2.png"],
+                    images["plants/newt-eye-3.png"]
+                ]
+            },
+            {
+                name: "Lullaby Lily",
+                blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
+                price: 28,
+                images: [
+                    images["plants/lullaby-lily-1.png"],
+                    images["plants/lullaby-lily-2.png"]
+                ]
+            }
+        ]
+    }
+    render() {
+        return (
+            <div id="shopping-state">
+                <section>
+                    <div style={{fontSize: "2em"}}>Shoppe</div>
+                    <div style={{margin: "1em 0em"}}>------------</div>
+                    <ul>
+                        {this.catalog.map((plant, key) => {
+                            return (
+                                <li key={key} style={{
+                                    color: game.cursor == key ? "#C00" : "#111",
+                                    listStyleType: game.cursor == key ? "circle" : "inherit"}}>
+                                    <b>{plant.name}</b> seeds
+                                </li>
+                            )
+                        })}
+                    </ul>
+                    <div style={{
+                        marginTop: "1em",
+                        color: game.cursor == this.catalog.length ? "#C00" : "#111"}}>
+                        Exit shoppe
+                    </div>
+                </section>
+                <div id="details">
+                    <section>
+                        {game.cursor < this.catalog.length ? (
+                            <div>
+                                <div style={{textAlign: "center"}}>
+                                    {this.catalog[game.cursor].images.map((image, index) => {
+                                        return (
+                                            <div key={index} style={{display: "inline-block"}}>
+                                                <div style={{
+                                                    display: "inline-block",
+                                                    backgroundImage: "url(" + image + ")",
+                                                    backgroundSize: "contain",
+                                                    width: "2em",
+                                                    height: "4em",
+                                                }}/>
+                                                {index < this.catalog[game.cursor].images.length - 1 ? (
+                                                    <div style={{
+                                                        display: "inline-block",
+                                                        verticalAlign: "bottom",
+                                                        width: "2em",
+                                                        height: "2em",
+                                                    }}>
+                                                        &#8594;
+                                                    </div>
+                                                ) : ""}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <div style={{margin: "1em 0em"}}>
+                                    {this.catalog[game.cursor].blurb}
+                                </div>
+                                <div>
+                                    <span>Price: </span>
+                                    <span style={{textDecoration: "underline"}}>
+                                        {this.catalog[game.cursor].price} gold
+                                    </span>
+                                </div>
+                            </div>
+                        ) : "Thanks for coming!!"}
+                    </section>
+                </div>
+                <div>
+                </div>
+                {game.gardener.renderGUI()}
+            </div>
+        )
+    }
+    update(tick) {
+        if(Input.isDown("<escape>")) {
+            Input.setUp("<escape>")
+            game.state = new FarmingState()
+        }
+        if(Input.isJustDown("W")
+        || Input.isJustDown("<up>")) {
+            game.cursor -= 1
+            if(game.cursor < 0) {
+                game.cursor = 0
+            }
+        }
+        if(Input.isJustDown("S")
+        || Input.isJustDown("<down>")) {
+            game.cursor += 1
+            if(game.cursor > this.catalog.length) {
+                game.cursor = this.catalog.length
+            }
+        }
+        if(Input.isJustDown("<space>")
+        || Input.isJustDown("<enter>")) {
+            Input.setUp("<space>")
+            Input.setUp("<enter>")
+            if(game.cursor < this.catalog.length) {
+                var plant = this.catalog[game.cursor]
+                game.gardener.gold -= plant.price
+                game.gardener.holding = plant
+                game.cursor = 0
+                game.state = new FarmingState()
+            } else {
+                game.cursor = 0
+                game.state = new FarmingState()
+            }
+        }
+    }
+}
+
+if(STAGE == "PRODUCTION") {
+    game.state = new TitleState()
+} else if(STAGE == "DEVELOPMENT") {
+    game.state = new FarmingState()
+}
 game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))
