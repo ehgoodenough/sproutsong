@@ -1,0 +1,21 @@
+@keyframes swing {
+    0% {
+        transform: rotateX(-45deg);
+    }
+
+    50% {
+        transform: rotateX(+45deg);
+    }
+
+    75% {
+        transform: rotateX(-45deg / 2);
+    }
+
+    87.5% {
+        transform: rotateX(+45deg / 4);
+    }
+
+    100% {
+        transform: rotateX(0deg);
+    }
+}

@@ -1,4 +1,5 @@
 @import "./styles/Font.scss";
+@import "./styles/Animations.scss";
 @import "./styles/AspectRatio.scss";
 
 * {
@@ -10,37 +11,78 @@
     image-rendering: pixelated;
 }
 
+
+$font-size: 22em;
+$font: heavybottom;
+@include font(heavybottom)
+
+$black: #111;
+$white: #EEE;
+$red: rgb(185,103,39);
+$blue: rgb(106,151,197);
+$background: rgb(255,203,124);
+
 html {
-    color: #EEE;
-    background-color: #111;
+    color: $white;
+    background-color: $black;
 }
 
 #frame {
-    color: #111;
-    font-family: heavybottom;
-    background-color: #EFEBD6;
+    color: $black;
+    font-family: $font;
+    background-color: $background;
     @include aspect-ratio(854, 480);
 }
-
-@include font(heavybottom)
 
 section {
     font-size: 22em;
 }
 
-$font-size: 22em;
 
 #title-screen {
-    padding: 64em;
-
     header {
-        font-weight: bold;
-        font-size: 4 * $font-size;
-        text-align: center;
+        perspective: 10000em;
 
-        animation-name: bob;
-        animation-duration: 5s;
-        animation-iteration-count: infinite;
+        #sign {
+            transform-origin: top;
+            animation-name: swing;
+            animation-duration: 5s;
+            
+            #signpost-1 {
+                top: 0em;
+                height: 64em;
+                width: 6 * 4em;
+                left: 2 * 64em;
+                position: absolute;
+                background-color: $red;
+            }
+            #signpost-2 {
+                top: 0em;
+                height: 64em;
+                width: 6 * 4em;
+                right: 2 * 64em;
+                position: absolute;
+                background-color: $red;
+            }
+
+            #signboard {
+                top: 64em;
+                left: 64em;
+                right: 64em;
+                height: 8 * 22em;
+                position: absolute;
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-color: $background;
+                background-image: url("./images/title.png");
+
+                border-width: 4em;
+                border-radius: 10em;
+                border-style: solid;
+                border-color: $red;
+            }
+        }
     }
 
     #navigation {
@@ -55,19 +97,14 @@ $font-size: 22em;
             font-size: 2 * $font-size;
         }
     }
-}
 
-@keyframes bob {
-    0% {
-        transform: translateY(0em);
-    }
-
-    50% {
-        transform: translateY(1em) rotateX(45deg);
-    }
-
-    100% {
-        transform: translateY(0em);
+    #backdrop {
+        top: 0em;
+        left: 0em;
+        right: 0em;
+        bottom: 0em;
+        position: absolute;
+        background-image: url("./images/grass.png");
     }
 }
 

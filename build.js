@@ -75,6 +75,9 @@ rimraf("./builds", function() {
                 jserrors.forEach(function(jserror) {console.log(jserror)})
                 fs.writeFileSync("./builds/web/index.js", injectviajs(jserrors))
             }
+            if(csserrors.length > 0) {
+                csserrors.forEach(function(csserror) {console.log(csserror)})
+            }
         }
         if(MODE == "SERVER") {
             if(server == null) {

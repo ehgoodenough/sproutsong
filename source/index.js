@@ -825,14 +825,29 @@ class FarmingState {
     }
 }
 
+var colors = {
+    red: "rgb(185,103,39)",
+    background: "rgb(255,203,124)",
+    blue: "rgb(106,151,197)",
+    white: "#EEE",
+    black: "#111",
+}
+
 class TitleState {
     render() {
         return (
             <div id="title-screen">
-                <header>Magic Garden</header>
+                <div id="backdrop"></div>
+                <header>
+                    <div id="sign">
+                        <div id="signpost-1"/>
+                        <div id="signpost-2"/>
+                        <div id="signboard"/>
+                    </div>
+                </header>
                 <div id="navigation">
-                    <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
-                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>About</div>
+                    <div style={{color: game.cursor === 0 ? colors.white : colors.black}}>Play</div>
+                    <div style={{color: game.cursor === 1 ? colors.white : colors.black}}>About</div>
                 </div>
             </div>
         )
