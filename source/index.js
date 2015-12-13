@@ -127,6 +127,35 @@ class Point {
     }
 }
 
+class Shop {
+    constructor() {
+        this.position = new Space({
+            tx0: 21, ty0: 4
+        })
+        this.tw = 5
+        this.th = 4
+    }
+    render() {
+        return (
+            <div style={{
+                top: Math.floor(this.position.ty0 - this.th) * TILE + "em",
+                left: Math.floor(this.position.tx0) * TILE + "em",
+                zIndex: Math.floor(this.position.ty0) * TILE,
+                position: "absolute",
+                width: (this.tw * TILE) + "em",
+                height: (this.th * TILE) + "em",
+                backgroundSize: "contain",
+                backgroundPosition: "bottom",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + images["shop.png"] + ")"
+            }}/>
+        )
+    }
+    update(tick) {
+        return
+    }
+}
+
 class Gardener {
     constructor() {
         this.inventory = new Array()
@@ -205,14 +234,31 @@ class Gardener {
             }
         }
     }
+    getImage() {
+        if(this.direction.tx == 0 && this.direction.ty == -1) {
+            return images["gardener/backwalk.gif"]
+        } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+            return images["gardener/frontwalk.gif"]
+        } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+            return images["gardener/leftwalk.gif"]
+        } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+            return images["gardener/rightwalk.gif"]
+        } else {
+            return images["gardener/frontwalk.gif"]
+        }
+    }
     render() {
         return (
             <div id="gardener" style={{
-                backgroundColor: "purple",
-                top: this.position.ty0 * TILE + "em",
+                backgroundSize: "contain",
+                backgroundPosition: "bottom",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + this.getImage() + ")",
+                top: (this.position.ty0 - 1) * TILE + "em",
                 left: this.position.tx0 * TILE + "em",
                 width: this.position.w + "em",
-                height: this.position.h + "em",
+                height: this.position.h + TILE + "em",
+                zIndex: this.position.ty0 * TILE,
                 transitionProperty: "top left",
                 transitionDuration: "0.2s",
                 position: "absolute"
@@ -247,8 +293,12 @@ class Gardener {
 }
 
 var images = new Object()
+images["shop.png"] = require("./images/shop.png")
 images["gui-back.png"] = require("./images/gui-back.png")
-images["plants.png"] = require("./images/plants.png")
+images["gardener/backwalk.gif"] = require("./images/gardener/backwalk.gif")
+images["gardener/frontwalk.gif"] = require("./images/gardener/frontwalk.gif")
+images["gardener/leftwalk.gif"] = require("./images/gardener/leftwalk.gif")
+images["gardener/rightwalk.gif"] = require("./images/gardener/rightwalk.gif")
 
 class Tile {
     constructor(data) {
@@ -480,6 +530,7 @@ game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
+game.shop = new Shop()
 
 class FarmingState {
     render() {
@@ -487,6 +538,7 @@ class FarmingState {
             <div id="farming-state">
                 <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
+                    {game.shop.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
                 </div>
@@ -533,6 +585,7 @@ class FarmingState {
             game.gardener.update(tick)
             game.camera.update(tick)
             game.plants.update(tick)
+            game.shop.update(tick)
         }
     }
 }
@@ -597,9 +650,9 @@ class AboutState {
                         We are Jam Sandwich!
                     </div>
                     <div>
-                        <a href="http://twitter.com/ehgoodenough" target="_blank">@ehgoodenough</a>
-                        <a href="http://twitter.com/madameberry" target="_blank">@madameberry</a>
-                        <a href="http://twitter.com/mcfunkypants" target="_blank">@mcfunkypants</a>
+                        <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
+                        <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
+                        <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
                     </div>
                     <div>
                         We hope you enjoy the game!
@@ -616,8 +669,11 @@ class AboutState {
     }
 }
 
-game.state = new FarmingState()
-game.state = new TitleState()
+if(STAGE == "PRODUCTION") {
+    game.state = new TitleState()
+} else if(STAGE == "DEVELOPMENT") {
+    game.state = new FarmingState()
+}
 game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))
