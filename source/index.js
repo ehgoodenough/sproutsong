@@ -159,7 +159,8 @@ class Shop {
 class Gardener {
     constructor() {
         this.inventory = new Array()
-        this.direction = new Object()
+        this.direction = {tx: 0, ty: 0}
+        this.velocity = {x: 0, y: 0}
         this.position = new Space({
             tx0: 4, ty0: 4,
             w: TILE, h: TILE,
@@ -173,21 +174,52 @@ class Gardener {
         if(Input.isDown("W")
         || Input.isDown("<up>")) {
             this.direction = {tx: 0, ty: -1}
-            this.position.y0 -= this.speed * tick
+            this.velocity.y = -1 * this.speed * tick
         } if(Input.isDown("S")
         || Input.isDown("<down>")) {
             this.direction = {tx: 0, ty: +1}
-            this.position.y0 += this.speed * tick
+            this.velocity.y = +1 * this.speed * tick
         } if(Input.isDown("A")
         || Input.isDown("<left>")) {
             this.direction = {tx: -1, ty: 0}
-            this.position.x0 -= this.speed * tick
+            this.velocity.x = -1 * this.speed * tick
         } if(Input.isDown("D")
         || Input.isDown("<right>")) {
             this.direction = {tx: +1, ty: 0}
-            this.position.x0 += this.speed * tick
+            this.velocity.x = +1 * this.speed * tick
         }
 
+        // do not collide with shop.
+        if(this.position.x0 + this.velocity.x >= (game.shop.position.tx0) * TILE
+        && this.position.y0 >= (game.shop.position.ty0 - 1) * TILE
+        && this.position.x0 + this.velocity.x < (game.shop.position.tx0 + game.shop.tw) * TILE
+        && this.position.y0 < (game.shop.position.ty0) * TILE) {
+            this.velocity.x = 0
+        }
+        if(this.position.x0 + this.velocity.x >= (game.shop.position.tx0) * TILE
+        && this.position.y0 + this.velocity.y >= (game.shop.position.ty0 - 1) * TILE
+        && this.position.x0 + this.velocity.x < (game.shop.position.tx0 + game.shop.tw) * TILE
+        && this.position.y0 + this.velocity.y < (game.shop.position.ty0) * TILE) {
+            this.velocity.y = 0
+        }
+
+        // do not collide with world.
+        // world.getTile(this.position.toSpace({x: this.velocity.x})).some((tile) => {
+        //     if(tile.unpassable == true) {
+        //         this.velocity.x = 0
+        //         return true
+        //     }
+        // })
+
+        // translate.
+        this.position.x0 += this.velocity.x
+        this.position.y0 += this.velocity.y
+
+        // deceleration.
+        this.velocity.x = 0
+        this.velocity.y = 0
+
+        // do not leave the world.
         if(this.position.x0 < 0) {
             this.position.x0 = 0
         } if(this.position.x0 > game.world.width - TILE) {
@@ -198,8 +230,10 @@ class Gardener {
             this.position.y0 = game.world.height - TILE
         }
 
+        // get position
         var key = this.position.tx0 + "x" + this.position.ty0
 
+        // harvest plants by walking on them.
         if(!!game.plants[key]) {
             var plant = game.plants[key]
             if(plant.harvestable) {
@@ -208,6 +242,7 @@ class Gardener {
             }
         }
 
+        // sell plants by dropping them off.
         if(!!game.world.tilemap[key]) {
             var tile = game.world.tilemap[key]
             if(tile.isShop) {
@@ -218,6 +253,7 @@ class Gardener {
             }
         }
 
+        // drop seeds on soil.
         if(Input.isDown("<space>")) {
             var position = this.position
             var key = position.tx0 + "x" + position.ty0
