@@ -1,3 +1,7 @@
+// how do you get seeds from store? remove "holding" change to seed
+// change how you pick up stuff that's lame as heck right now
+// fix dropping seeds to be around and below you, not just below you
+
 var React = require("react")
 var ShortID = require("shortid")
 
@@ -83,13 +87,28 @@ class Space {
     set ty1(ty1) {
         this.y1 = ty1 * TILE
     }
-    toSpace(space) {
+    toSpace(space = new Object()) {
         return new Space({
             x: this.x + (space.x ? space.x : 0),
             y: this.y + (space.y ? space.y : 0),
             w: this.w + (space.w ? space.w : 0),
             h: this.h + (space.h ? space.h : 0),
         })
+    }
+    toString(space = new Object()) {
+        return (this.tx0 + (space.tx0 || 0)) + "x" + (this.ty0 + (space.ty0 || 0))
+    }
+    getNeighbors() {
+        return [
+            this.toString({tx0: -1}),
+            this.toString({tx0: +1}),
+            this.toString({ty0: -1}),
+            this.toString({ty0: +1}),
+            this.toString({tx0: -1, ty0: -1}),
+            this.toString({tx0: -1, ty0: +1}),
+            this.toString({tx0: +1, ty0: -1}),
+            this.toString({tx0: +1, ty0: +1}),
+        ]
     }
 }
 
@@ -169,24 +188,29 @@ class Gardener {
         this.speed = TILE * 0.01
 
         this.gold = 0
+        this.spinning = 0
+        this.seed = plants[0]
     }
     update(tick) {
-        if(Input.isDown("W")
-        || Input.isDown("<up>")) {
-            this.direction = {tx: 0, ty: -1}
-            this.velocity.y = -1 * this.speed * tick
-        } if(Input.isDown("S")
-        || Input.isDown("<down>")) {
-            this.direction = {tx: 0, ty: +1}
-            this.velocity.y = +1 * this.speed * tick
-        } if(Input.isDown("A")
-        || Input.isDown("<left>")) {
-            this.direction = {tx: -1, ty: 0}
-            this.velocity.x = -1 * this.speed * tick
-        } if(Input.isDown("D")
-        || Input.isDown("<right>")) {
-            this.direction = {tx: +1, ty: 0}
-            this.velocity.x = +1 * this.speed * tick
+        this.spinning -= tick
+        if(this.spinning <= 0) {
+            if(Input.isDown("W")
+            || Input.isDown("<up>")) {
+                this.direction = {tx: 0, ty: -1}
+                this.velocity.y = -1 * this.speed * tick
+            } if(Input.isDown("S")
+            || Input.isDown("<down>")) {
+                this.direction = {tx: 0, ty: +1}
+                this.velocity.y = +1 * this.speed * tick
+            } if(Input.isDown("A")
+            || Input.isDown("<left>")) {
+                this.direction = {tx: -1, ty: 0}
+                this.velocity.x = -1 * this.speed * tick
+            } if(Input.isDown("D")
+            || Input.isDown("<right>")) {
+                this.direction = {tx: +1, ty: 0}
+                this.velocity.x = +1 * this.speed * tick
+            }
         }
 
         // do not collide with shop.
@@ -242,52 +266,79 @@ class Gardener {
             }
         }
 
-        // sell plants by dropping them off.
-        if(!!game.world.tilemap[key]) {
-            var tile = game.world.tilemap[key]
-            if(tile.isShop) {
+        // drop seeds on soil.
+        if(Input.isJustDown("<space>")) {
+            if(this.seed != undefined) {
+                var positions = []
+                if(this.seed.formation >= 8) {
+                    positions = positions.concat(this.position.getNeighbors())
+                } if(this.seed.formation == 1 || this.seed.formation == 9) {
+                    positions.push(this.position.toString())
+                }
+                positions.forEach((position) => {
+                    var tile = game.world.tilemap[position]
+                    var plant = game.plants[position]
+                    if(!!tile && tile.isSoil && !plant) {
+                        game.plants.add(new Plant({
+                            position: new Space({
+                                tx0: tile.position.tx0,
+                                ty0: tile.position.ty0,
+                                w: TILE, h: TILE,
+                            }),
+                            images: [images["plants/seed.png"]].concat(this.seed.images),
+                            update: this.seed.update,
+                            initialize: this.seed.initialize,
+                            gold: this.seed.gold,
+                        }))
+                    }
+                })
+                delete this.seed
+                this.spinning = 500
+            }
+
+            if((this.position.tx0 == 21 && this.position.ty0 == 4
+            && this.direction.tx == 0 && this.direction.ty == -1)
+            || (this.position.tx0 == 20 && this.position.ty0 == 3
+            && this.direction.tx == +1 && this.direction.ty == 0)) {
+                game.state = new ShoppingState()
+            }
+
+            // can interact with shipping bin
+            if((this.position.tx0 == 25 && this.position.ty0 == 4
+            && this.direction.tx == 0 && this.direction.ty == -1)
+            || (this.position.tx0 == 26 && this.position.ty0 == 3
+            && this.direction.tx == -1 && this.direction.ty == 0)) {
                 this.inventory.forEach((plant) => {
                     this.gold += plant.gold
                 })
                 this.inventory = []
             }
         }
-
-        // drop seeds on soil.
-        if(Input.isDown("<space>")) {
-            var position = this.position
-            var key = position.tx0 + "x" + position.ty0
-            var tile = game.world.tilemap[key]
-            var plant = game.plants[key]
-            if(tile.isSoil && !plant) {
-                game.plants.add(new Plant({
-                    position: new Space({
-                        tx0: tile.position.tx0,
-                        ty0: tile.position.ty0,
-                        w: TILE, h: TILE,
-                    })
-                }))
-            }
-        }
-
-        // can interact with shop
-        if(this.position.tx0 == 21 && this.position.ty0 == 4
-        && this.direction.tx == 0 && this.direction.ty == -1
-        && Input.isJustDown("<space>")) {
-            game.state = new ShoppingState()
-        }
     }
     getImage() {
-        if(this.direction.tx == 0 && this.direction.ty == -1) {
-            return images["gardener/backwalk.gif"]
-        } else if(this.direction.tx == 0 && this.direction.ty == +1) {
-            return images["gardener/frontwalk.gif"]
-        } else if(this.direction.tx == -1 && this.direction.ty == 0) {
-            return images["gardener/leftwalk.gif"]
-        } else if(this.direction.tx == +1 && this.direction.ty == 0) {
-            return images["gardener/rightwalk.gif"]
+        if(this.spinning <= 0) {
+            if(this.direction.tx == 0 && this.direction.ty == -1) {
+                return images["gardener/backwalk.gif"]
+            } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                return images["gardener/frontwalk.gif"]
+            } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                return images["gardener/leftwalk.gif"]
+            } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                return images["gardener/rightwalk.gif"]
+            } else {
+                return images["gardener/frontwalk.gif"]
+            }
         } else {
-            return images["gardener/frontwalk.gif"]
+            var spin = Math.floor(this.spinning / 62.5) % 8
+            if(spin == 0 || spin == 1) {
+                return images["gardener/frontwalk.gif"]
+            } else if(spin == 2 || spin == 3) {
+                return images["gardener/rightwalk.gif"]
+            } else if(spin == 4 || spin == 5) {
+                return images["gardener/backwalk.gif"]
+            } else if(spin == 6 || spin == 7) {
+                return images["gardener/leftwalk.gif"]
+            }
         }
     }
     render() {
@@ -395,9 +446,148 @@ class Canvas extends React.Component {
     }
 }
 
+var plants = window.plants = [
+    {
+        name: "Rabbit Foot",
+        blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
+        formation: 9,
+        price: 2, //buy from shop
+        gold: 1, //sell to shop
+        images: [
+            images["plants/rabbit-foot-1.png"],
+            images["plants/rabbit-foot-2.png"]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 1 * 2000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 1 * 4000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.harvestable = true
+            }
+        }
+    },
+    {
+        name: "Crystal Sprout",
+        blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
+        formation: 8,
+        price: 10,
+        gold: 3,
+        images: [
+            images["plants/crystal-sprout-1.png"],
+            images["plants/crystal-sprout-2.png"],
+            images["plants/crystal-sprout-3.png"]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 20 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                if(this.growth > 40 * 1000) {
+                    this.stage = 3
+                }
+            }
+            if(this.stage == 3) {
+                this.harvestable = true
+            }
+        }
+    },
+    {
+        name: "Newt Eye",
+        blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
+        formation: 8,
+        price: 12,
+        gold: 4,
+        images: [
+            images["plants/newt-eye-1.png"],
+            images["plants/newt-eye-2.png"],
+            images["plants/newt-eye-3.png"]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 1 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.harvestable = true
+                if(this.growth > 13 * 1000) {
+                    this.stage = 3
+                }
+            }
+            if(this.stage == 3) {
+                this.gold = 0
+            }
+        }
+    },
+    {
+        name: "Lullaby Lily",
+        blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
+        formation: 1,
+        price: 28,
+        gold: 10,
+        images: [
+            images["plants/lullaby-lily-1.png"],
+            images["plants/lullaby-lily-2.png"]
+        ],
+        initialize: function() {
+            this.neighbors = this.position.getNeighbors()
+        },
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 20 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.neighbors.forEach(function(position) {
+                    if(game.plants[position] != undefined) {
+                        game.plants[position].growth += 10
+                    }
+                })
+            }
+        }
+    }
+]
+
 class Plant {
     constructor(that) {
         this.position = that.position
+        this.images = that.images
+        this.update = that.update
+        this.gold = that.gold
+
+        if(that.initialize != undefined) {
+            this.initialize = that.initialize
+            this.initialize()
+        }
 
         this.key = this.position.tx0 + "x" + this.position.ty0
 
@@ -406,38 +596,23 @@ class Plant {
             "#0C0",
             "#00C",
         ]
-        this.growth = 0
+        this.growth = Math.random() * 1000
         this.stage = 0
-
-        this.gold = 1
     }
     render() {
         return (
             <div id="plant" key={this.key} style={{
-                position: "absolute",
-                top: this.position.y0 + "em",
+                top: this.position.y0 - TILE + "em",
                 left: this.position.x0 + "em",
-                width: this.position.w + "em",
-                height: this.position.h + "em",
-                backgroundColor: this.colors[this.stage],
+                zIndex: this.position.y0,
+                position: "absolute",
+                width: TILE + "em",
+                height: (TILE * 2) + "em",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + this.images[this.stage] + ")",
             }}/>
         )
-    }
-    update(tick) {
-        this.growth += tick
-        if(this.stage == 0) {
-            if(this.growth > 1 * 2000) {
-                this.stage = 1
-            }
-        }
-        if(this.stage == 1) {
-            if(this.growth > 1 * 4000) {
-                this.stage = 2
-            }
-        }
-        if(this.stage == 2) {
-            this.harvestable = true
-        }
     }
 }
 
@@ -732,44 +907,10 @@ class AboutState {
 class ShoppingState {
     constructor() {
         this.catalog = [
-            {
-                name: "Rabbit Foot",
-                blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
-                price: 2,
-                images: [
-                    images["plants/rabbit-foot-1.png"],
-                    images["plants/rabbit-foot-2.png"]
-                ]
-            },
-            {
-                name: "Crystal Sprout",
-                blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
-                price: 10,
-                images: [
-                    images["plants/crystal-sprout-1.png"],
-                    images["plants/crystal-sprout-2.png"],
-                    images["plants/crystal-sprout-3.png"]
-                ]
-            },
-            {
-                name: "Newt Eye",
-                blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
-                price: 12,
-                images: [
-                    images["plants/newt-eye-1.png"],
-                    images["plants/newt-eye-2.png"],
-                    images["plants/newt-eye-3.png"]
-                ]
-            },
-            {
-                name: "Lullaby Lily",
-                blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
-                price: 28,
-                images: [
-                    images["plants/lullaby-lily-1.png"],
-                    images["plants/lullaby-lily-2.png"]
-                ]
-            }
+            plants[0],
+            plants[1],
+            plants[2],
+            plants[3],
         ]
     }
     render() {
@@ -869,7 +1010,7 @@ class ShoppingState {
             if(game.cursor < this.catalog.length) {
                 var plant = this.catalog[game.cursor]
                 game.gardener.gold -= plant.price
-                game.gardener.holding = plant
+                game.gardener.seed = plant
                 game.cursor = 0
                 game.state = new FarmingState()
             } else {
