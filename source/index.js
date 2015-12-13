@@ -93,6 +93,40 @@ class Space {
     }
 }
 
+class Point {
+    constructor(that) {
+        this.x = 0
+        this.y = 0
+
+        that = that || {}
+        for(var key in that) {
+            this[key] = that[key]
+        }
+    }
+
+    get tx() {
+        return Math.floor(this.x / TILE)
+    }
+    get ty() {
+        return Math.floor(this.y / TILE)
+    }
+    set tx(tx) {
+        this.x = tx * TILE
+    }
+    set ty(ty) {
+        this.y = ty * TILE
+    }
+    toPoint(point) {
+        return new Point({
+            x: this.x + (space.x ? space.x : 0),
+            y: this.y + (space.y ? space.y : 0)
+        })
+    }
+    toString() {
+        return this.tx + "x" + this.ty
+    }
+}
+
 class Gardener {
     constructor() {
         this.inventory = new Array()
@@ -102,25 +136,27 @@ class Gardener {
             w: TILE, h: TILE,
         })
 
+        this.speed = TILE * 0.01 //pixel per millisecond
+
         this.gold = 0
     }
     update(tick) {
-        if(Input.isJustDown("W")
-        || Input.isJustDown("<up>")) {
+        if(Input.isDown("W")
+        || Input.isDown("<up>")) {
             this.direction = {tx: 0, ty: -1}
-            this.position.ty0 -= 1
-        } if(Input.isJustDown("S")
-        || Input.isJustDown("<down>")) {
+            this.position.y0 -= this.speed * tick
+        } if(Input.isDown("S")
+        || Input.isDown("<down>")) {
             this.direction = {tx: 0, ty: +1}
-            this.position.ty0 += 1
-        } if(Input.isJustDown("A")
-        || Input.isJustDown("<left>")) {
+            this.position.y0 += this.speed * tick
+        } if(Input.isDown("A")
+        || Input.isDown("<left>")) {
             this.direction = {tx: -1, ty: 0}
-            this.position.tx0 -= 1
-        } if(Input.isJustDown("D")
-        || Input.isJustDown("<right>")) {
+            this.position.x0 -= this.speed * tick
+        } if(Input.isDown("D")
+        || Input.isDown("<right>")) {
             this.direction = {tx: +1, ty: 0}
-            this.position.tx0 += 1
+            this.position.x0 += this.speed * tick
         }
 
         if(this.position.x0 < 0) {
@@ -153,7 +189,7 @@ class Gardener {
             }
         }
 
-        if(Input.isJustDown("<space>")) {
+        if(Input.isDown("<space>")) {
             var position = this.position
             var key = position.tx0 + "x" + position.ty0
             var tile = game.world.tilemap[key]
@@ -173,8 +209,8 @@ class Gardener {
         return (
             <div id="gardener" style={{
                 backgroundColor: "purple",
-                top: this.position.y0 + "em",
-                left: this.position.x0 + "em",
+                top: this.position.ty0 * TILE + "em",
+                left: this.position.tx0 * TILE + "em",
                 width: this.position.w + "em",
                 height: this.position.h + "em",
                 transitionProperty: "top left",
@@ -318,8 +354,8 @@ class World {
                             y0: ty * TILE,
                         }),
                         gid: gid - 1, //off by one
-                        isSoil: gid - 1 == 18 || gid - 1 == 19,
-                        isShop: gid - 1 == 26,
+                        isSoil: gid - 1 == 18 || gid - 1 == 19 || gid - 1 == 20,
+                        isShop: gid - 1 == 27,
                     })
                 })
             }
