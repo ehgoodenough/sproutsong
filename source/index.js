@@ -347,6 +347,17 @@ images["gardener/backwalk.gif"] = require("./images/gardener/backwalk.gif")
 images["gardener/frontwalk.gif"] = require("./images/gardener/frontwalk.gif")
 images["gardener/leftwalk.gif"] = require("./images/gardener/leftwalk.gif")
 images["gardener/rightwalk.gif"] = require("./images/gardener/rightwalk.gif")
+images["plants/rabbit-foot-1.png"] = require("./images/plants/rabbit-foot-1.png")
+images["plants/rabbit-foot-2.png"] = require("./images/plants/rabbit-foot-2.png")
+images["plants/crystal-sprout-1.png"] = require("./images/plants/crystal-sprout-1.png")
+images["plants/crystal-sprout-2.png"] = require("./images/plants/crystal-sprout-2.png")
+images["plants/crystal-sprout-3.png"] = require("./images/plants/crystal-sprout-3.png")
+images["plants/newt-eye-1.png"] = require("./images/plants/newt-eye-1.png")
+images["plants/newt-eye-2.png"] = require("./images/plants/newt-eye-2.png")
+images["plants/newt-eye-3.png"] = require("./images/plants/newt-eye-3.png")
+images["plants/lullaby-lily-1.png"] = require("./images/plants/lullaby-lily-1.png")
+images["plants/lullaby-lily-2.png"] = require("./images/plants/lullaby-lily-2.png")
+images["plants/seed.png"] = require("./images/plants/seed.png")
 
 class Tile {
     constructor(data) {
@@ -725,21 +736,39 @@ class ShoppingState {
                 name: "Rabbit Foot",
                 blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
                 price: 2,
+                images: [
+                    images["plants/rabbit-foot-1.png"],
+                    images["plants/rabbit-foot-2.png"]
+                ]
             },
             {
-                name: "Crystal Sprouts",
-                blurb: "A slow-growing plant; a crystal sprout might take a while to grow, but it's sells for a lot.",
-                price: 4,
+                name: "Crystal Sprout",
+                blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
+                price: 10,
+                images: [
+                    images["plants/crystal-sprout-1.png"],
+                    images["plants/crystal-sprout-2.png"],
+                    images["plants/crystal-sprout-3.png"]
+                ]
             },
             {
                 name: "Newt Eye",
                 blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
-                price: 5,
+                price: 12,
+                images: [
+                    images["plants/newt-eye-1.png"],
+                    images["plants/newt-eye-2.png"],
+                    images["plants/newt-eye-3.png"]
+                ]
             },
             {
                 name: "Lullaby Lily",
                 blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
-                price: 20,
+                price: 28,
+                images: [
+                    images["plants/lullaby-lily-1.png"],
+                    images["plants/lullaby-lily-2.png"]
+                ]
             }
         ]
     }
@@ -770,8 +799,30 @@ class ShoppingState {
                     <section>
                         {game.cursor < this.catalog.length ? (
                             <div>
-                                <div>
-                                    Hello
+                                <div style={{textAlign: "center"}}>
+                                    {this.catalog[game.cursor].images.map((image, index) => {
+                                        return (
+                                            <div key={index} style={{display: "inline-block"}}>
+                                                <div style={{
+                                                    display: "inline-block",
+                                                    backgroundImage: "url(" + image + ")",
+                                                    backgroundSize: "contain",
+                                                    width: "2em",
+                                                    height: "4em",
+                                                }}/>
+                                                {index < this.catalog[game.cursor].images.length - 1 ? (
+                                                    <div style={{
+                                                        display: "inline-block",
+                                                        verticalAlign: "bottom",
+                                                        width: "2em",
+                                                        height: "2em",
+                                                    }}>
+                                                        &#8594;
+                                                    </div>
+                                                ) : ""}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                                 <div style={{margin: "1em 0em"}}>
                                     {this.catalog[game.cursor].blurb}
@@ -785,6 +836,8 @@ class ShoppingState {
                             </div>
                         ) : "Thanks for coming!!"}
                     </section>
+                </div>
+                <div>
                 </div>
                 {game.gardener.renderGUI()}
             </div>
@@ -814,7 +867,11 @@ class ShoppingState {
             Input.setUp("<space>")
             Input.setUp("<enter>")
             if(game.cursor < this.catalog.length) {
-                e.log("bought a", this.catalog[game.cursor])
+                var plant = this.catalog[game.cursor]
+                game.gardener.gold -= plant.price
+                game.gardener.holding = plant
+                game.cursor = 0
+                game.state = new FarmingState()
             } else {
                 game.cursor = 0
                 game.state = new FarmingState()
@@ -827,7 +884,6 @@ if(STAGE == "PRODUCTION") {
     game.state = new TitleState()
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
-    game.state = new ShoppingState()
 }
 game.cursor = 0
 
