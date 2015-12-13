@@ -87,7 +87,7 @@ class Space {
     set ty1(ty1) {
         this.y1 = ty1 * TILE
     }
-    toSpace(space) {
+    toSpace(space = new Object()) {
         return new Space({
             x: this.x + (space.x ? space.x : 0),
             y: this.y + (space.y ? space.y : 0),
@@ -95,8 +95,20 @@ class Space {
             h: this.h + (space.h ? space.h : 0),
         })
     }
-    toString(space) {
+    toString(space = new Object()) {
         return (this.tx0 + (space.tx0 || 0)) + "x" + (this.ty0 + (space.ty0 || 0))
+    }
+    getNeighbors() {
+        return [
+            this.toString({tx0: -1}),
+            this.toString({tx0: +1}),
+            this.toString({ty0: -1}),
+            this.toString({ty0: +1}),
+            this.toString({tx0: -1, ty0: -1}),
+            this.toString({tx0: -1, ty0: +1}),
+            this.toString({tx0: +1, ty0: -1}),
+            this.toString({tx0: +1, ty0: +1}),
+        ]
     }
 }
 
@@ -252,31 +264,34 @@ class Gardener {
         }
 
         // drop seeds on soil.
-        if(Input.isDown("<space>")) {
-            if(this.seed != undefined) {
-                var position = this.position
-                var key = position.tx0 + "x" + position.ty0
-                var tile = game.world.tilemap[key]
-                var plant = game.plants[key]
-                if(tile.isSoil && plant == undefined) {
-                    game.plants.add(new Plant({
-                        position: new Space({
-                            tx0: tile.position.tx0,
-                            ty0: tile.position.ty0,
-                            w: TILE, h: TILE,
-                        }),
-                        images: this.seed.images,
-                        update: this.seed.update,
-                        initialize: this.seed.initialize,
-                        gold: this.seed.gold,
-                    }))
-                    delete this.seed
-                }
-            }
-        }
-
-        // can interact with shopkeeper
         if(Input.isJustDown("<space>")) {
+            if(this.seed != undefined) {
+                var positions = []
+                if(this.seed.formation >= 8) {
+                    positions = positions.concat(this.position.getNeighbors())
+                } if(this.seed.formation == 1 || this.seed.formation == 9) {
+                    positions.push(this.position.toString())
+                }
+                positions.forEach((position) => {
+                    var tile = game.world.tilemap[position]
+                    var plant = game.plants[position]
+                    if(!!tile && tile.isSoil && !plant) {
+                        game.plants.add(new Plant({
+                            position: new Space({
+                                tx0: tile.position.tx0,
+                                ty0: tile.position.ty0,
+                                w: TILE, h: TILE,
+                            }),
+                            images: [images["plants/seed.png"]].concat(this.seed.images),
+                            update: this.seed.update,
+                            initialize: this.seed.initialize,
+                            gold: this.seed.gold,
+                        }))
+                    }
+                })
+                delete this.seed
+            }
+
             if((this.position.tx0 == 21 && this.position.ty0 == 4
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 20 && this.position.ty0 == 3
@@ -418,10 +433,10 @@ var plants = window.plants = [
     {
         name: "Rabbit Foot",
         blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
-        price: 2,
-        gold: 1,
+        formation: 9,
+        price: 2, //buy from shop
+        gold: 1, //sell to shop
         images: [
-            images["plants/seed.png"],
             images["plants/rabbit-foot-1.png"],
             images["plants/rabbit-foot-2.png"]
         ],
@@ -445,10 +460,10 @@ var plants = window.plants = [
     {
         name: "Crystal Sprout",
         blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
+        formation: 8,
         price: 10,
         gold: 3,
         images: [
-            images["plants/seed.png"],
             images["plants/crystal-sprout-1.png"],
             images["plants/crystal-sprout-2.png"],
             images["plants/crystal-sprout-3.png"]
@@ -478,10 +493,10 @@ var plants = window.plants = [
     {
         name: "Newt Eye",
         blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
+        formation: 8,
         price: 12,
         gold: 4,
         images: [
-            images["plants/seed.png"],
             images["plants/newt-eye-1.png"],
             images["plants/newt-eye-2.png"],
             images["plants/newt-eye-3.png"]
@@ -512,24 +527,15 @@ var plants = window.plants = [
     {
         name: "Lullaby Lily",
         blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
+        formation: 1,
         price: 28,
         gold: 10,
         images: [
-            images["plants/seed.png"],
             images["plants/lullaby-lily-1.png"],
             images["plants/lullaby-lily-2.png"]
         ],
         initialize: function() {
-            this.neighbors = [
-                this.position.toString({tx0: -1}),
-                this.position.toString({tx0: +1}),
-                this.position.toString({ty0: -1}),
-                this.position.toString({ty0: +1}),
-                this.position.toString({tx0: -1, ty0: -1}),
-                this.position.toString({tx0: -1, ty0: +1}),
-                this.position.toString({tx0: +1, ty0: -1}),
-                this.position.toString({tx0: +1, ty1: +1}),
-            ]
+            this.neighbors = this.position.getNeighbors()
         },
         update: function(tick) {
             this.growth += tick
