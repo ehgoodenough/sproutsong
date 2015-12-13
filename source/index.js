@@ -828,12 +828,12 @@ class FarmingState {
 class TitleState {
     render() {
         return (
-            <div id="title-state">
-                <section>
-                    <div style={{fontSize: "2em", fontWeight: "bold"}}>Magic Garden</div>
+            <div id="title-screen">
+                <header>Magic Garden</header>
+                <div id="navigation">
                     <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
                     <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>About</div>
-                </section>
+                </div>
             </div>
         )
     }
@@ -1026,6 +1026,7 @@ if(STAGE == "PRODUCTION") {
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
 }
+game.state = new TitleState()
 game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))

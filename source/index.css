@@ -17,13 +17,58 @@ html {
 
 #frame {
     color: #111;
-    font-family: monospace;
+    font-family: heavybottom;
     background-color: #EFEBD6;
     @include aspect-ratio(854, 480);
 }
 
+@include font(heavybottom)
+
 section {
     font-size: 22em;
+}
+
+$font-size: 22em;
+
+#title-screen {
+    padding: 64em;
+
+    header {
+        font-weight: bold;
+        font-size: 4 * $font-size;
+        text-align: center;
+
+        animation-name: bob;
+        animation-duration: 5s;
+        animation-iteration-count: infinite;
+    }
+
+    #navigation {
+        left: 64em;
+        right: 64em;
+        bottom: 64em;
+        position: absolute;
+
+        text-align: center;
+
+        * {
+            font-size: 2 * $font-size;
+        }
+    }
+}
+
+@keyframes bob {
+    0% {
+        transform: translateY(0em);
+    }
+
+    50% {
+        transform: translateY(1em) rotateX(45deg);
+    }
+
+    100% {
+        transform: translateY(0em);
+    }
 }
 
 #pause-menu {
