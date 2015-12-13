@@ -95,11 +95,14 @@ class Space {
 
 class Gardener {
     constructor() {
+        this.inventory = new Array()
         this.direction = new Object()
         this.position = new Space({
             tx0: 4, ty0: 4,
             w: TILE, h: TILE,
         })
+
+        this.gold = 0
     }
     update(tick) {
         if(Input.isJustDown("W")
@@ -122,12 +125,32 @@ class Gardener {
 
         if(this.position.x0 < 0) {
             this.position.x0 = 0
-        } if(this.position.x0 > game.world.width) {
-            this.position.x0 = game.world.width
+        } if(this.position.x0 > game.world.width - TILE) {
+            this.position.x0 = game.world.width - TILE
         } if(this.position.y0 < 0) {
             this.position.y0 = 0
-        } if(this.position.y0 > game.world.height) {
-            this.position.y0 = game.world.height
+        } if(this.position.y0 > game.world.height - TILE) {
+            this.position.y0 = game.world.height - TILE
+        }
+
+        var key = this.position.tx0 + "x" + this.position.ty0
+
+        if(!!game.plants[key]) {
+            var plant = game.plants[key]
+            if(plant.harvestable) {
+                this.inventory.push(plant)
+                game.plants.remove(plant)
+            }
+        }
+
+        if(!!game.world.tilemap[key]) {
+            var tile = game.world.tilemap[key]
+            if(tile.isShop) {
+                this.inventory.forEach((plant) => {
+                    this.gold += plant.gold
+                })
+                this.inventory = []
+            }
         }
 
         if(Input.isJustDown("<space>")) {
@@ -135,7 +158,6 @@ class Gardener {
                 x: this.direction.tx * TILE,
                 y: this.direction.ty * TILE
             })
-            console.log(this.direction, position.tx, position.ty)
             var tile = game.world.getTile(position)
             if(tile.isSoil) {
                 game.plants.add(new Plant({
@@ -162,7 +184,36 @@ class Gardener {
             }}/>
         )
     }
+    renderGUI() {
+        return (
+            <div id="gui" style={{
+                position: "absolute",
+                width: 128 + "em",
+                height: 116 + "em",
+                right: "0em",
+                bottom: "0em",
+                backgroundImage: "url(" + images["gui-back.png"] + ")",
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "contain",
+            }}>
+                <div style={{
+                    right: 4 + "em",
+                    bottom: 4 + "em",
+                    fontWeight: "bold",
+                    lineHeight: 1 + "em",
+                    position: "absolute",
+                    color: "#800"
+                }}>
+                    <span>{this.gold}</span>
+                </div>
+            </div>
+        )
+    }
 }
+
+var images = new Object()
+images["gui-back.png"] = require("./images/gui-back.png")
+images["plants.png"] = require("./images/plants.png")
 
 class Tile {
     constructor(data) {
@@ -202,21 +253,47 @@ class Canvas extends React.Component {
 
 class Plant {
     constructor(that) {
-        for(var key in that) {
-            this[key] = that[key]
-        }
+        this.position = that.position
+
+        this.key = this.position.tx0 + "x" + this.position.ty0
+
+        this.colors = [
+            "#C00",
+            "#0C0",
+            "#00C",
+        ]
+        this.growth = 0
+        this.stage = 0
+
+        this.gold = 1
     }
     render() {
         return (
-            <div key={this.key} style={{
+            <div id="plant" key={this.key} style={{
                 position: "absolute",
                 top: this.position.y0 + "em",
                 left: this.position.x0 + "em",
                 width: this.position.w + "em",
                 height: this.position.h + "em",
-                backgroundColor: "#C00",
+                backgroundColor: this.colors[this.stage],
             }}/>
         )
+    }
+    update(tick) {
+        this.growth += tick
+        if(this.stage == 0) {
+            if(this.growth > 1 * 2000) {
+                this.stage = 1
+            }
+        }
+        if(this.stage == 1) {
+            if(this.growth > 1 * 4000) {
+                this.stage = 2
+            }
+        }
+        if(this.stage == 2) {
+            this.harvestable = true
+        }
     }
 }
 
@@ -241,8 +318,9 @@ class World {
                             x0: tx * TILE,
                             y0: ty * TILE,
                         }),
+                        gid: gid - 1, //off by one
                         isSoil: gid - 1 == 18 || gid - 1 == 19,
-                        gid: gid - 1 //off by one
+                        isShop: gid - 1 == 26,
                     })
                 })
             }
@@ -323,23 +401,28 @@ class Camera {
             this.position.y1 = game.world.height
         }
     }
+
     render() {
         return {
             position: "absolute",
             top: -1 * this.position.y0 + "em",
             left: -1 * this.position.x0 + "em",
             //fontSize: this.position.z + "em"
+            transitionProperty: "top left",
+            transitionDuration: "1s"
         }
     }
 }
 
 class Collection {
     add(entity) {
-        entity.key = ShortID.generate()
+        if(entity.key == undefined) {
+            entity.key = ShortID.generate()
+        }
         this[entity.key] = entity
     }
     remove(entity) {
-        delete this[entity.id]
+        delete this[entity.key]
     }
     render() {
         return (
@@ -351,30 +434,34 @@ class Collection {
         )
     }
     update(tick) {
-        return
+        Object.keys(this).map((key) => {
+            return this[key].update(tick)
+        })
     }
 }
 
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
-//game.camera = new Camera(game.gardener)
+game.camera = new Camera(game.gardener)
 game.plants = new Collection()
 
 class InGameState {
     render() {
         return (
             <div id="in-game-state">
-                {/*<div id="camera" style={game.camera.render()}>*/}
+                <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
+                </div>
+                {game.gardener.renderGUI()}
             </div>
         )
     }
     update(tick) {
         game.gardener.update(tick)
-        //game.camera.update(tick)
+        game.camera.update(tick)
         game.plants.update(tick)
     }
 }
