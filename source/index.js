@@ -501,16 +501,64 @@ class InGameState {
     }
 }
 
-var state = new InGameState()
+class TitleState {
+    render() {
+        return (
+            <div id="title-state">
+                <div style={{fontSize: "16em"}}>
+                    <h1>Magic Garden</h1>
+                    <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
+                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>Options</div>
+                    <div style={{color: game.cursor === 2 ? "#C00" : "#111"}}>Leaderboards</div>
+                    <div style={{color: game.cursor === 3 ? "#C00" : "#111"}}>Credits</div>
+                </div>
+            </div>
+        )
+    }
+    update(tick) {
+        Input.getQueue().forEach(function(event) {
+            if(event.type == "press"
+            && event.key == "<up>"
+            || event.key == "W") {
+                game.cursor -= 1
+                if(game.cursor < 0) {
+                    game.cursor = 3
+                }
+            }
+            if(event.type == "press"
+            && event.key == "<down>"
+            || event.key == "S") {
+                game.cursor += 1
+                if(game.cursor > 3) {
+                    game.cursor = 0
+                }
+            }
+            if(event.type == "press"
+            && event.key == "<space>"
+            || event.key == "<enter>") {
+                if(game.cursor == 0) {
+                    game.state = new InGameState()
+                } else if(game.cursor == 1) {
+                    game.state = new CreditsState()
+                } else if(game.cursor == 2) {
+                    game.state = new LeaderboardState()
+                }
+            }
+        })
+    }
+}
+
+game.state = new InGameState()
+game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))
 
 var loop = new Loop(function(tick) {
-    state.update(tick)
+    game.state.update(tick)
     renderer.render(function() {
         return (
             <div id="frame">
-                {state.render()}
+                {game.state.render()}
             </div>
         )
     })
