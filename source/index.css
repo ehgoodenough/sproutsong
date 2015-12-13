@@ -17,11 +17,45 @@ html {
 
 #frame {
     color: #111;
+    font-family: monospace;
     background-color: #EFEBD6;
     @include aspect-ratio(854, 480);
 }
 
-span {
-    font-size: 32em;
-    font-family: monospace;
+section {
+    font-size: 22em;
+}
+
+#pause-menu {
+    top: 0em;
+    left: 0em;
+    right: 0em;
+    bottom: 0em;
+    margin: auto;
+    width: 320em;
+    height: 180em;
+    padding: 32em;
+    position: absolute;
+
+    color: #EEE;
+    text-align: center;
+
+    transition-duration: 0.15s;
+    transition-property: opacity;
+
+    border-width: 3em;
+    border-color: #111;
+    border-radius: 6em;
+    border-style: solid;
+    background-color: rgba(0, 122, 0, 0.9);
+}
+
+#about-state {
+    div {
+        margin-bottom: 1em;
+    }
+    a {
+        display: block;
+        cursor: pointer;
+    }
 }

@@ -481,36 +481,153 @@ game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
 
-class InGameState {
+class FarmingState {
     render() {
         return (
-            <div id="in-game-state">
+            <div id="farming-state">
                 <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
                     {game.plants.render()}
                     {game.gardener.render()}
                 </div>
                 {game.gardener.renderGUI()}
+                <div id="pause-menu" style={{opacity: game.paused ? 1 : 0}}>
+                    <section>
+                        <h2>Paused!</h2>
+                        <div>---</div>
+                        <div style={{color: game.cursor == 0 ? "#111" : "inherit"}}>resume game</div>
+                        <div style={{color: game.cursor == 1 ? "#111" : "inherit"}}>return to menu</div>
+                    </section>
+                </div>
             </div>
         )
     }
     update(tick) {
-        game.gardener.update(tick)
-        game.camera.update(tick)
-        game.plants.update(tick)
+        if(Input.isJustDown("<escape>")) {
+            game.paused = !game.paused
+            if(game.paused == true) {
+                game.cursor = 0
+            }
+        }
+        if(game.paused) {
+            if(Input.isDown("W")
+            || Input.isDown("<up>")) {
+                game.cursor = 0
+            }
+            if(Input.isDown("S")
+            || Input.isDown("<down>")) {
+                game.cursor = 1
+            }
+            if(Input.isDown("<space>")
+            || Input.isDown("<enter>")) {
+                Input.setUp("<space>")
+                Input.setUp("<enter>")
+                if(game.cursor == 0) {
+                    game.paused = false
+                } else if(game.cursor == 1) {
+                    game.state = new TitleState()
+                    game.paused = false
+                }
+            }
+        } else {
+            game.gardener.update(tick)
+            game.camera.update(tick)
+            game.plants.update(tick)
+        }
     }
 }
 
-var state = new InGameState()
+class TitleState {
+    render() {
+        return (
+            <div id="title-state">
+                <section>
+                    <div style={{fontSize: "2em", fontWeight: "bold"}}>Magic Garden</div>
+                    <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
+                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>About</div>
+                </section>
+            </div>
+        )
+    }
+    update(tick) {
+        if(Input.isJustDown("<up>")
+        || Input.isJustDown("W")) {
+            game.cursor -= 1
+            if(game.cursor < 0) {
+                game.cursor = 0
+            }
+        }
+        if(Input.isJustDown("<down>")
+        || Input.isJustDown("S")) {
+            game.cursor += 1
+            if(game.cursor > 1) {
+                game.cursor = 1
+            }
+        }
+        if(Input.isJustDown("<space>")
+        || Input.isJustDown("<enter>")) {
+            Input.setUp("<space>")
+            Input.setUp("<enter>")
+            if(game.cursor == 0) {
+                game.state = new FarmingState()
+            } else if(game.cursor == 1) {
+                game.state = new AboutState()
+            }
+        }
+    }
+}
+
+class AboutState {
+    render() {
+        return (
+            <div id="about-state">
+                <section>
+                    <div>
+                        Grow your garden of magical
+                        plants to sell at the market!
+                    </div>
+                    <div>
+                        ...put better blurb here...
+                    </div>
+                    <div>
+                        Developed for Ludum Dare 34, where
+                        the theme was <b>Growing.</b>
+                    </div>
+                    <div>
+                        We are Jam Sandwich!
+                    </div>
+                    <div>
+                        <a href="http://twitter.com/ehgoodenough" target="_blank">@ehgoodenough</a>
+                        <a href="http://twitter.com/madameberry" target="_blank">@madameberry</a>
+                        <a href="http://twitter.com/mcfunkypants" target="_blank">@mcfunkypants</a>
+                    </div>
+                    <div>
+                        We hope you enjoy the game!
+                    </div>
+                </section>
+            </div>
+        )
+    }
+    update(tick) {
+        if(Input.isDown("<escape>")) {
+            Input.setUp("<escape>")
+            game.state = new TitleState()
+        }
+    }
+}
+
+game.state = new FarmingState()
+game.state = new TitleState()
+game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))
 
 var loop = new Loop(function(tick) {
-    state.update(tick)
+    game.state.update(tick)
     renderer.render(function() {
         return (
             <div id="frame">
-                {state.render()}
+                {game.state.render()}
             </div>
         )
     })
