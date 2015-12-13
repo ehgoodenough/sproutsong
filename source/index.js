@@ -491,13 +491,45 @@ class InGameState {
                     {game.gardener.render()}
                 </div>
                 {game.gardener.renderGUI()}
+                <div id="pause-menu" style={{opacity: game.paused ? 1 : 0}}>
+                    <section>
+                        <h2>Paused!</h2>
+                        <div>---</div>
+                        <div style={{color: game.cursor == 0 ? "#111" : "inherit"}}>resume game</div>
+                        <div style={{color: game.cursor == 1 ? "#111" : "inherit"}}>return to menu</div>
+                    </section>
+                </div>
             </div>
         )
     }
     update(tick) {
-        game.gardener.update(tick)
-        game.camera.update(tick)
-        game.plants.update(tick)
+        if(Input.isJustDown("<escape>")) {
+            game.paused = !game.paused
+            if(game.paused == true) {
+                game.cursor = 0
+            }
+        }
+        if(game.paused) {
+            if(Input.isDown("W")
+            || Input.isDown("<up>")) {
+                game.cursor = 0
+            } if(Input.isDown("S")
+            || Input.isDown("<down>")) {
+                game.cursor = 1
+            } if(Input.isDown("<space>")) {
+                Input.setUp("<space>")
+                if(game.cursor == 0) {
+                    game.paused = false
+                } else if(game.cursor == 1) {
+                    game.state = new TitleState()
+                    game.paused = false
+                }
+            }
+        } else {
+            game.gardener.update(tick)
+            game.camera.update(tick)
+            game.plants.update(tick)
+        }
     }
 }
 
@@ -516,35 +548,35 @@ class TitleState {
         )
     }
     update(tick) {
-        Input.getQueue().forEach(function(event) {
-            if(event.type == "press"
-            && event.key == "<up>"
-            || event.key == "W") {
-                game.cursor -= 1
-                if(game.cursor < 0) {
-                    game.cursor = 3
-                }
-            }
-            if(event.type == "press"
-            && event.key == "<down>"
-            || event.key == "S") {
-                game.cursor += 1
-                if(game.cursor > 3) {
-                    game.cursor = 0
-                }
-            }
-            if(event.type == "press"
-            && event.key == "<space>"
-            || event.key == "<enter>") {
-                if(game.cursor == 0) {
-                    game.state = new InGameState()
-                } else if(game.cursor == 1) {
-                    game.state = new CreditsState()
-                } else if(game.cursor == 2) {
-                    game.state = new LeaderboardState()
-                }
-            }
-        })
+        // Input.getQueue().forEach(function(event) {
+        //     if(event.type == "press"
+        //     && event.key == "<up>"
+        //     || event.key == "W") {
+        //         game.cursor -= 1
+        //         if(game.cursor < 0) {
+        //             game.cursor = 3
+        //         }
+        //     }
+        //     if(event.type == "press"
+        //     && event.key == "<down>"
+        //     || event.key == "S") {
+        //         game.cursor += 1
+        //         if(game.cursor > 3) {
+        //             game.cursor = 0
+        //         }
+        //     }
+        //     if(event.type == "press"
+        //     && event.key == "<space>"
+        //     || event.key == "<enter>") {
+        //         if(game.cursor == 0) {
+        //             game.state = new InGameState()
+        //         } else if(game.cursor == 1) {
+        //             game.state = new CreditsState()
+        //         } else if(game.cursor == 2) {
+        //             game.state = new LeaderboardState()
+        //         }
+        //     }
+        // })
     }
 }
 
