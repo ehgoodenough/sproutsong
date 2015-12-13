@@ -95,6 +95,9 @@ class Space {
             h: this.h + (space.h ? space.h : 0),
         })
     }
+    toString(space) {
+        return (this.tx0 + (space.tx0 || 0)) + "x" + (this.ty0 + (space.ty0 || 0))
+    }
 }
 
 class Point {
@@ -174,7 +177,7 @@ class Gardener {
 
         this.gold = 0
 
-        this.seed = plants[0]
+        this.seed = plants[3]
     }
     update(tick) {
         if(Input.isDown("W")
@@ -264,6 +267,7 @@ class Gardener {
                         }),
                         images: this.seed.images,
                         update: this.seed.update,
+                        initialize: this.seed.initialize,
                         gold: this.seed.gold,
                     }))
                     delete this.seed
@@ -410,7 +414,7 @@ class Canvas extends React.Component {
     }
 }
 
-var plants = [
+var plants = window.plants = [
     {
         name: "Rabbit Foot",
         blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
@@ -481,7 +485,29 @@ var plants = [
             images["plants/newt-eye-1.png"],
             images["plants/newt-eye-2.png"],
             images["plants/newt-eye-3.png"]
-        ]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 1 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.harvestable = true
+                if(this.growth > 13 * 1000) {
+                    this.stage = 3
+                }
+            }
+            if(this.stage == 3) {
+                this.gold = 0
+            }
+        }
     },
     {
         name: "Lullaby Lily",
@@ -492,7 +518,39 @@ var plants = [
             images["plants/seed.png"],
             images["plants/lullaby-lily-1.png"],
             images["plants/lullaby-lily-2.png"]
-        ]
+        ],
+        initialize: function() {
+            this.neighbors = [
+                this.position.toString({tx0: -1}),
+                this.position.toString({tx0: +1}),
+                this.position.toString({ty0: -1}),
+                this.position.toString({ty0: +1}),
+                this.position.toString({tx0: -1, ty0: -1}),
+                this.position.toString({tx0: -1, ty0: +1}),
+                this.position.toString({tx0: +1, ty0: -1}),
+                this.position.toString({tx0: +1, ty1: +1}),
+            ]
+        },
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 20 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.neighbors.forEach(function(position) {
+                    if(game.plants[position] != undefined) {
+                        game.plants[position].growth += 10
+                    }
+                })
+            }
+        }
     }
 ]
 
@@ -503,6 +561,11 @@ class Plant {
         this.update = that.update
         this.gold = that.gold
 
+        if(that.initialize != undefined) {
+            this.initialize = that.initialize
+            this.initialize()
+        }
+
         this.key = this.position.tx0 + "x" + this.position.ty0
 
         this.colors = [
@@ -510,7 +573,7 @@ class Plant {
             "#0C0",
             "#00C",
         ]
-        this.growth = 0
+        this.growth = Math.random() * 1000
         this.stage = 0
     }
     render() {
@@ -821,44 +884,10 @@ class AboutState {
 class ShoppingState {
     constructor() {
         this.catalog = [
-            {
-                name: "Rabbit Foot",
-                blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
-                price: 2,
-                images: [
-                    images["plants/rabbit-foot-1.png"],
-                    images["plants/rabbit-foot-2.png"]
-                ]
-            },
-            {
-                name: "Crystal Sprout",
-                blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
-                price: 10,
-                images: [
-                    images["plants/crystal-sprout-1.png"],
-                    images["plants/crystal-sprout-2.png"],
-                    images["plants/crystal-sprout-3.png"]
-                ]
-            },
-            {
-                name: "Newt Eye",
-                blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
-                price: 12,
-                images: [
-                    images["plants/newt-eye-1.png"],
-                    images["plants/newt-eye-2.png"],
-                    images["plants/newt-eye-3.png"]
-                ]
-            },
-            {
-                name: "Lullaby Lily",
-                blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
-                price: 28,
-                images: [
-                    images["plants/lullaby-lily-1.png"],
-                    images["plants/lullaby-lily-2.png"]
-                ]
-            }
+            plants[0],
+            plants[1],
+            plants[2],
+            plants[3],
         ]
     }
     render() {
@@ -958,7 +987,7 @@ class ShoppingState {
             if(game.cursor < this.catalog.length) {
                 var plant = this.catalog[game.cursor]
                 game.gardener.gold -= plant.price
-                game.gardener.holding = plant
+                game.gardener.seed = plant
                 game.cursor = 0
                 game.state = new FarmingState()
             } else {
