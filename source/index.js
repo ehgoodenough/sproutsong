@@ -275,10 +275,12 @@ class Gardener {
                 } if(this.seed.formation == 1 || this.seed.formation == 9) {
                     positions.push(this.position.toString())
                 }
+                var canPlant = false
                 positions.forEach((position) => {
                     var tile = game.world.tilemap[position]
                     var plant = game.plants[position]
                     if(!!tile && tile.isSoil && !plant) {
+                        canPlant = true
                         game.plants.add(new Plant({
                             position: new Space({
                                 tx0: tile.position.tx0,
@@ -292,8 +294,10 @@ class Gardener {
                         }))
                     }
                 })
-                delete this.seed
-                this.spinning = 500
+                if(canPlant == true) {
+                    this.spinning = 500
+                    delete this.seed
+                }
             }
 
             if((this.position.tx0 == 21 && this.position.ty0 == 4
@@ -329,17 +333,28 @@ class Gardener {
                 return images["gardener/frontwalk.gif"]
             }
         } else {
-            var spin = Math.floor(this.spinning / 62.5) % 8
-            if(spin == 0 || spin == 1) {
-                return images["gardener/frontwalk.gif"]
-            } else if(spin == 2 || spin == 3) {
-                return images["gardener/rightwalk.gif"]
-            } else if(spin == 4 || spin == 5) {
-                return images["gardener/backwalk.gif"]
-            } else if(spin == 6 || spin == 7) {
-                return images["gardener/leftwalk.gif"]
+            if(this.direction.tx == 0 && this.direction.ty == -1) {
+                return images["gardener/backmagic.gif"]
+            } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                return images["gardener/frontmagic.gif"]
+            } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                return images["gardener/leftmagic.gif"]
+            } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                return images["gardener/rightmagic.gif"]
+            } else {
+                return images["gardener/frontmagic.gif"]
             }
         }
+        // var spin = Math.floor(this.spinning / 62.5) % 8
+        // if(spin == 0 || spin == 1) {
+        //     return images["gardener/frontwalk.gif"]
+        // } else if(spin == 2 || spin == 3) {
+        //     return images["gardener/rightwalk.gif"]
+        // } else if(spin == 4 || spin == 5) {
+        //     return images["gardener/backwalk.gif"]
+        // } else if(spin == 6 || spin == 7) {
+        //     return images["gardener/leftwalk.gif"]
+        // }
     }
     render() {
         return (
@@ -409,6 +424,10 @@ images["plants/newt-eye-3.png"] = require("./images/plants/newt-eye-3.png")
 images["plants/lullaby-lily-1.png"] = require("./images/plants/lullaby-lily-1.png")
 images["plants/lullaby-lily-2.png"] = require("./images/plants/lullaby-lily-2.png")
 images["plants/seed.png"] = require("./images/plants/seed.png")
+images["gardener/frontmagic.gif"] = require("./images/gardener/magic_front.gif")
+images["gardener/backmagic.gif"] = require("./images/gardener/magic_back.gif")
+images["gardener/leftmagic.gif"] = require("./images/gardener/magic_left.gif")
+images["gardener/rightmagic.gif"] = require("./images/gardener/magic_right.gif")
 
 class Tile {
     constructor(data) {
@@ -591,11 +610,6 @@ class Plant {
 
         this.key = this.position.tx0 + "x" + this.position.ty0
 
-        this.colors = [
-            "#C00",
-            "#0C0",
-            "#00C",
-        ]
         this.growth = Math.random() * 1000
         this.stage = 0
     }
@@ -778,12 +792,12 @@ class FarmingState {
                     {game.gardener.render()}
                 </div>
                 {game.gardener.renderGUI()}
-                <div id="pause-menu" style={{opacity: game.paused ? 1 : 0}}>
+                <div id="pause-menu" style={{bottom: game.paused ? 0 : -2 * HEIGHT + "em"}}>
                     <section>
                         <h2>Paused!</h2>
                         <div>---</div>
-                        <div style={{color: game.cursor == 0 ? "#111" : "inherit"}}>resume game</div>
-                        <div style={{color: game.cursor == 1 ? "#111" : "inherit"}}>return to menu</div>
+                        <div style={{color: game.cursor == 0 ? colors.red : "inherit"}}>resume game</div>
+                        <div style={{color: game.cursor == 1 ? colors.red : "inherit"}}>return to menu</div>
                     </section>
                 </div>
             </div>
@@ -814,6 +828,7 @@ class FarmingState {
                 } else if(game.cursor == 1) {
                     game.state = new TitleState()
                     game.paused = false
+                    game.cursor = 0
                 }
             }
         } else {
@@ -883,7 +898,7 @@ class TitleState {
 class AboutState {
     render() {
         return (
-            <div id="about-state">
+            <div id="about-screen">
                 <section>
                     <div>
                         Grow your garden of magical
@@ -893,19 +908,18 @@ class AboutState {
                         ...put better blurb here...
                     </div>
                     <div>
-                        Developed for Ludum Dare 34, where
-                        the theme was <b>Growing.</b>
+                        We are Jam Sandwich!
                     </div>
                     <div>
-                        We are Jam Sandwich!
+                        We hope you enjoy the game!
+                    </div>
+                    <div>
+                        Developed for Ludum Dare 34, where the theme was <b>Growing.</b>
                     </div>
                     <div>
                         <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
                         <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
                         <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
-                    </div>
-                    <div>
-                        We hope you enjoy the game!
                     </div>
                 </section>
             </div>
@@ -1041,7 +1055,6 @@ if(STAGE == "PRODUCTION") {
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
 }
-game.state = new TitleState()
 game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))

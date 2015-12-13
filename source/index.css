@@ -47,7 +47,7 @@ section {
             transform-origin: top;
             animation-name: swing;
             animation-duration: 5s;
-            
+
             #signpost-1 {
                 top: 0em;
                 height: 64em;
@@ -117,25 +117,31 @@ section {
     width: 320em;
     height: 180em;
     padding: 32em;
+    z-index: 100000;
     position: absolute;
 
-    color: #EEE;
+    color: $black;
     text-align: center;
 
     transition-duration: 0.15s;
-    transition-property: opacity;
+    transition-property: bottom;
 
     border-width: 3em;
     border-color: #111;
     border-radius: 6em;
-    border-style: solid;
-    background-color: rgba(0, 122, 0, 0.9);
+    border-style: dashed;
+    background-color: transparentize($background, 0.75);
 }
 
-#about-state {
+#about-screen {
+    /** {
+        font-size: $font-size;
+    }*/
+
     div {
         margin-bottom: 1em;
     }
+
     a {
         display: block;
         cursor: pointer;
