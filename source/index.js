@@ -154,12 +154,11 @@ class Gardener {
         }
 
         if(Input.isJustDown("<space>")) {
-            var position = this.position.toSpace({
-                x: this.direction.tx * TILE,
-                y: this.direction.ty * TILE
-            })
-            var tile = game.world.getTile(position)
-            if(tile.isSoil) {
+            var position = this.position
+            var key = position.tx0 + "x" + position.ty0
+            var tile = game.world.tilemap[key]
+            var plant = game.plants[key]
+            if(tile.isSoil && !plant) {
                 game.plants.add(new Plant({
                     position: new Space({
                         tx0: tile.position.tx0,
