@@ -166,7 +166,7 @@ class Gardener {
             w: TILE, h: TILE,
         })
 
-        this.speed = TILE * 0.01 //pixel per millisecond
+        this.speed = TILE * 0.01
 
         this.gold = 0
     }
@@ -269,6 +269,13 @@ class Gardener {
                 }))
             }
         }
+
+        // can interact with shop
+        if(this.position.tx0 == 21 && this.position.ty0 == 4
+        && this.direction.tx == 0 && this.direction.ty == -1
+        && Input.isJustDown("<space>")) {
+            game.state = new ShoppingState()
+        }
     }
     getImage() {
         if(this.direction.tx == 0 && this.direction.ty == -1) {
@@ -314,14 +321,19 @@ class Gardener {
                 backgroundSize: "contain",
             }}>
                 <div style={{
-                    right: 4 + "em",
-                    bottom: 4 + "em",
+                    right: 23 + "em",
+                    bottom: 23 + "em",
                     fontWeight: "bold",
-                    lineHeight: 1 + "em",
                     position: "absolute",
-                    color: "#800"
+                    textAlign: "center",
+                    color: "rgb(185,102,39)"
                 }}>
-                    <span>{this.gold}</span>
+                    <div style={{fontSize: "28em", lineHeight: "1em"}}>
+                        {this.gold}
+                    </div>
+                    <div style={{fontSize: "16em"}}>
+                        GOLD
+                    </div>
                 </div>
             </div>
         )
@@ -567,6 +579,7 @@ game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
 game.shop = new Shop()
+game.gardener.gold = 100
 
 class FarmingState {
     render() {
@@ -705,10 +718,116 @@ class AboutState {
     }
 }
 
+class ShoppingState {
+    constructor() {
+        this.catalog = [
+            {
+                name: "Rabbit Foot",
+                blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
+                price: 2,
+            },
+            {
+                name: "Crystal Sprouts",
+                blurb: "A slow-growing plant; a crystal sprout might take a while to grow, but it's sells for a lot.",
+                price: 4,
+            },
+            {
+                name: "Newt Eye",
+                blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
+                price: 5,
+            },
+            {
+                name: "Lullaby Lily",
+                blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
+                price: 20,
+            }
+        ]
+    }
+    render() {
+        return (
+            <div id="shopping-state">
+                <section>
+                    <div style={{fontSize: "2em"}}>Shoppe</div>
+                    <div style={{margin: "1em 0em"}}>------------</div>
+                    <ul>
+                        {this.catalog.map((plant, key) => {
+                            return (
+                                <li key={key} style={{
+                                    color: game.cursor == key ? "#C00" : "#111",
+                                    listStyleType: game.cursor == key ? "circle" : "inherit"}}>
+                                    <b>{plant.name}</b> seeds
+                                </li>
+                            )
+                        })}
+                    </ul>
+                    <div style={{
+                        marginTop: "1em",
+                        color: game.cursor == this.catalog.length ? "#C00" : "#111"}}>
+                        Exit shoppe
+                    </div>
+                </section>
+                <div id="details">
+                    <section>
+                        {game.cursor < this.catalog.length ? (
+                            <div>
+                                <div>
+                                    Hello
+                                </div>
+                                <div style={{margin: "1em 0em"}}>
+                                    {this.catalog[game.cursor].blurb}
+                                </div>
+                                <div>
+                                    <span>Price: </span>
+                                    <span style={{textDecoration: "underline"}}>
+                                        {this.catalog[game.cursor].price} gold
+                                    </span>
+                                </div>
+                            </div>
+                        ) : "Thanks for coming!!"}
+                    </section>
+                </div>
+                {game.gardener.renderGUI()}
+            </div>
+        )
+    }
+    update(tick) {
+        if(Input.isDown("<escape>")) {
+            Input.setUp("<escape>")
+            game.state = new FarmingState()
+        }
+        if(Input.isJustDown("W")
+        || Input.isJustDown("<up>")) {
+            game.cursor -= 1
+            if(game.cursor < 0) {
+                game.cursor = 0
+            }
+        }
+        if(Input.isJustDown("S")
+        || Input.isJustDown("<down>")) {
+            game.cursor += 1
+            if(game.cursor > this.catalog.length) {
+                game.cursor = this.catalog.length
+            }
+        }
+        if(Input.isJustDown("<space>")
+        || Input.isJustDown("<enter>")) {
+            Input.setUp("<space>")
+            Input.setUp("<enter>")
+            if(game.cursor < this.catalog.length) {
+                e.log("bought a", this.catalog[game.cursor])
+            } else {
+                game.cursor = 0
+                game.state = new FarmingState()
+            }
+        }
+    }
+}
+
 if(STAGE == "PRODUCTION") {
     game.state = new TitleState()
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
+    game.state = new ShoppingState()
 }
 game.cursor = 0
 

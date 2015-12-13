@@ -59,3 +59,19 @@ section {
         cursor: pointer;
     }
 }
+
+#shopping-state {
+    padding: 64em;
+
+    #details {
+        top: 0em;
+        right: 0em;
+        bottom: 0em;
+        width: 50%;
+        padding: 64em;
+        position: absolute;
+        border-left-width: 3.5em;
+        border-left-style: dashed;
+        border-left-color: #111;
+    }
+}
