@@ -1,3 +1,7 @@
+// how do you get seeds from store? remove "holding" change to seed
+// change how you pick up stuff that's lame as heck right now
+// fix dropping seeds to be around and below you, not just below you
+
 var React = require("react")
 var ShortID = require("shortid")
 
@@ -169,6 +173,8 @@ class Gardener {
         this.speed = TILE * 0.01
 
         this.gold = 0
+
+        this.seed = plants[0]
     }
     update(tick) {
         if(Input.isDown("W")
@@ -242,39 +248,48 @@ class Gardener {
             }
         }
 
-        // sell plants by dropping them off.
-        if(!!game.world.tilemap[key]) {
-            var tile = game.world.tilemap[key]
-            if(tile.isShop) {
+        // drop seeds on soil.
+        if(Input.isDown("<space>")) {
+            if(this.seed != undefined) {
+                var position = this.position
+                var key = position.tx0 + "x" + position.ty0
+                var tile = game.world.tilemap[key]
+                var plant = game.plants[key]
+                if(tile.isSoil && plant == undefined) {
+                    game.plants.add(new Plant({
+                        position: new Space({
+                            tx0: tile.position.tx0,
+                            ty0: tile.position.ty0,
+                            w: TILE, h: TILE,
+                        }),
+                        images: this.seed.images,
+                        update: this.seed.update,
+                        gold: this.seed.gold,
+                    }))
+                    delete this.seed
+                }
+            }
+        }
+
+        // can interact with shopkeeper
+        if(Input.isJustDown("<space>")) {
+            if((this.position.tx0 == 21 && this.position.ty0 == 4
+            && this.direction.tx == 0 && this.direction.ty == -1)
+            || (this.position.tx0 == 20 && this.position.ty0 == 3
+            && this.direction.tx == +1 && this.direction.ty == 0)) {
+                game.state = new ShoppingState()
+            }
+
+            // can interact with shipping bin
+            if((this.position.tx0 == 25 && this.position.ty0 == 4
+            && this.direction.tx == 0 && this.direction.ty == -1)
+            || (this.position.tx0 == 26 && this.position.ty0 == 3
+            && this.direction.tx == -1 && this.direction.ty == 0)) {
                 this.inventory.forEach((plant) => {
                     this.gold += plant.gold
                 })
                 this.inventory = []
             }
-        }
-
-        // drop seeds on soil.
-        if(Input.isDown("<space>")) {
-            var position = this.position
-            var key = position.tx0 + "x" + position.ty0
-            var tile = game.world.tilemap[key]
-            var plant = game.plants[key]
-            if(tile.isSoil && !plant) {
-                game.plants.add(new Plant({
-                    position: new Space({
-                        tx0: tile.position.tx0,
-                        ty0: tile.position.ty0,
-                        w: TILE, h: TILE,
-                    })
-                }))
-            }
-        }
-
-        // can interact with shop
-        if(this.position.tx0 == 21 && this.position.ty0 == 4
-        && this.direction.tx == 0 && this.direction.ty == -1
-        && Input.isJustDown("<space>")) {
-            game.state = new ShoppingState()
         }
     }
     getImage() {
@@ -395,9 +410,98 @@ class Canvas extends React.Component {
     }
 }
 
+var plants = [
+    {
+        name: "Rabbit Foot",
+        blurb: "A fast-growing plant; a rabbit's foot yeilds a quick award!",
+        price: 2,
+        gold: 1,
+        images: [
+            images["plants/seed.png"],
+            images["plants/rabbit-foot-1.png"],
+            images["plants/rabbit-foot-2.png"]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 1 * 2000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 1 * 4000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.harvestable = true
+            }
+        }
+    },
+    {
+        name: "Crystal Sprout",
+        blurb: "A slow-growing plant; it might take a while to grow, but it's sells for a lot.",
+        price: 10,
+        gold: 3,
+        images: [
+            images["plants/seed.png"],
+            images["plants/crystal-sprout-1.png"],
+            images["plants/crystal-sprout-2.png"],
+            images["plants/crystal-sprout-3.png"]
+        ],
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                if(this.growth > 20 * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                if(this.growth > 40 * 1000) {
+                    this.stage = 3
+                }
+            }
+            if(this.stage == 3) {
+                this.harvestable = true
+            }
+        }
+    },
+    {
+        name: "Newt Eye",
+        blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
+        price: 12,
+        gold: 4,
+        images: [
+            images["plants/seed.png"],
+            images["plants/newt-eye-1.png"],
+            images["plants/newt-eye-2.png"],
+            images["plants/newt-eye-3.png"]
+        ]
+    },
+    {
+        name: "Lullaby Lily",
+        blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
+        price: 28,
+        gold: 10,
+        images: [
+            images["plants/seed.png"],
+            images["plants/lullaby-lily-1.png"],
+            images["plants/lullaby-lily-2.png"]
+        ]
+    }
+]
+
 class Plant {
     constructor(that) {
         this.position = that.position
+        this.images = that.images
+        this.update = that.update
+        this.gold = that.gold
 
         this.key = this.position.tx0 + "x" + this.position.ty0
 
@@ -408,36 +512,21 @@ class Plant {
         ]
         this.growth = 0
         this.stage = 0
-
-        this.gold = 1
     }
     render() {
         return (
             <div id="plant" key={this.key} style={{
-                position: "absolute",
-                top: this.position.y0 + "em",
+                top: this.position.y0 - TILE + "em",
                 left: this.position.x0 + "em",
-                width: this.position.w + "em",
-                height: this.position.h + "em",
-                backgroundColor: this.colors[this.stage],
+                zIndex: this.position.y0,
+                position: "absolute",
+                width: TILE + "em",
+                height: (TILE * 2) + "em",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundImage: "url(" + this.images[this.stage] + ")",
             }}/>
         )
-    }
-    update(tick) {
-        this.growth += tick
-        if(this.stage == 0) {
-            if(this.growth > 1 * 2000) {
-                this.stage = 1
-            }
-        }
-        if(this.stage == 1) {
-            if(this.growth > 1 * 4000) {
-                this.stage = 2
-            }
-        }
-        if(this.stage == 2) {
-            this.harvestable = true
-        }
     }
 }
 
