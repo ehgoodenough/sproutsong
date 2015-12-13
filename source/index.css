@@ -26,10 +26,6 @@ section {
     font-size: 22em;
 }
 
-span {
-    font-size: 16em;
-}
-
 #pause-menu {
     top: 0em;
     left: 0em;
@@ -52,4 +48,14 @@ span {
     border-radius: 6em;
     border-style: solid;
     background-color: rgba(0, 122, 0, 0.9);
+}
+
+#about-state {
+    div {
+        margin-bottom: 1em;
+    }
+    a {
+        display: block;
+        cursor: pointer;
+    }
 }

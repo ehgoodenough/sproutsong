@@ -481,10 +481,10 @@ game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
 
-class InGameState {
+class FarmingState {
     render() {
         return (
-            <div id="in-game-state">
+            <div id="farming-state">
                 <div id="camera" style={game.camera.render()}>
                     {game.world.render()}
                     {game.plants.render()}
@@ -513,11 +513,15 @@ class InGameState {
             if(Input.isDown("W")
             || Input.isDown("<up>")) {
                 game.cursor = 0
-            } if(Input.isDown("S")
+            }
+            if(Input.isDown("S")
             || Input.isDown("<down>")) {
                 game.cursor = 1
-            } if(Input.isDown("<space>")) {
+            }
+            if(Input.isDown("<space>")
+            || Input.isDown("<enter>")) {
                 Input.setUp("<space>")
+                Input.setUp("<enter>")
                 if(game.cursor == 0) {
                     game.paused = false
                 } else if(game.cursor == 1) {
@@ -537,50 +541,83 @@ class TitleState {
     render() {
         return (
             <div id="title-state">
-                <div style={{fontSize: "16em"}}>
-                    <h1>Magic Garden</h1>
+                <section>
+                    <div style={{fontSize: "2em", fontWeight: "bold"}}>Magic Garden</div>
                     <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
-                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>Options</div>
-                    <div style={{color: game.cursor === 2 ? "#C00" : "#111"}}>Leaderboards</div>
-                    <div style={{color: game.cursor === 3 ? "#C00" : "#111"}}>Credits</div>
-                </div>
+                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>About</div>
+                </section>
             </div>
         )
     }
     update(tick) {
-        // Input.getQueue().forEach(function(event) {
-        //     if(event.type == "press"
-        //     && event.key == "<up>"
-        //     || event.key == "W") {
-        //         game.cursor -= 1
-        //         if(game.cursor < 0) {
-        //             game.cursor = 3
-        //         }
-        //     }
-        //     if(event.type == "press"
-        //     && event.key == "<down>"
-        //     || event.key == "S") {
-        //         game.cursor += 1
-        //         if(game.cursor > 3) {
-        //             game.cursor = 0
-        //         }
-        //     }
-        //     if(event.type == "press"
-        //     && event.key == "<space>"
-        //     || event.key == "<enter>") {
-        //         if(game.cursor == 0) {
-        //             game.state = new InGameState()
-        //         } else if(game.cursor == 1) {
-        //             game.state = new CreditsState()
-        //         } else if(game.cursor == 2) {
-        //             game.state = new LeaderboardState()
-        //         }
-        //     }
-        // })
+        if(Input.isJustDown("<up>")
+        || Input.isJustDown("W")) {
+            game.cursor -= 1
+            if(game.cursor < 0) {
+                game.cursor = 0
+            }
+        }
+        if(Input.isJustDown("<down>")
+        || Input.isJustDown("S")) {
+            game.cursor += 1
+            if(game.cursor > 1) {
+                game.cursor = 1
+            }
+        }
+        if(Input.isJustDown("<space>")
+        || Input.isJustDown("<enter>")) {
+            Input.setUp("<space>")
+            Input.setUp("<enter>")
+            if(game.cursor == 0) {
+                game.state = new FarmingState()
+            } else if(game.cursor == 1) {
+                game.state = new AboutState()
+            }
+        }
     }
 }
 
-game.state = new InGameState()
+class AboutState {
+    render() {
+        return (
+            <div id="about-state">
+                <section>
+                    <div>
+                        Grow your garden of magical
+                        plants to sell at the market!
+                    </div>
+                    <div>
+                        ...put better blurb here...
+                    </div>
+                    <div>
+                        Developed for Ludum Dare 34, where
+                        the theme was <b>Growing.</b>
+                    </div>
+                    <div>
+                        We are Jam Sandwich!
+                    </div>
+                    <div>
+                        <a href="http://twitter.com/ehgoodenough" target="_blank">@ehgoodenough</a>
+                        <a href="http://twitter.com/madameberry" target="_blank">@madameberry</a>
+                        <a href="http://twitter.com/mcfunkypants" target="_blank">@mcfunkypants</a>
+                    </div>
+                    <div>
+                        We hope you enjoy the game!
+                    </div>
+                </section>
+            </div>
+        )
+    }
+    update(tick) {
+        if(Input.isDown("<escape>")) {
+            Input.setUp("<escape>")
+            game.state = new TitleState()
+        }
+    }
+}
+
+game.state = new FarmingState()
+game.state = new TitleState()
 game.cursor = 0
 
 var renderer = new Renderer(document.getElementById("mount"))
