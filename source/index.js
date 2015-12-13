@@ -188,26 +188,29 @@ class Gardener {
         this.speed = TILE * 0.01
 
         this.gold = 0
-
-        this.seed = plants[3]
+        this.spinning = 0
+        this.seed = plants[0]
     }
     update(tick) {
-        if(Input.isDown("W")
-        || Input.isDown("<up>")) {
-            this.direction = {tx: 0, ty: -1}
-            this.velocity.y = -1 * this.speed * tick
-        } if(Input.isDown("S")
-        || Input.isDown("<down>")) {
-            this.direction = {tx: 0, ty: +1}
-            this.velocity.y = +1 * this.speed * tick
-        } if(Input.isDown("A")
-        || Input.isDown("<left>")) {
-            this.direction = {tx: -1, ty: 0}
-            this.velocity.x = -1 * this.speed * tick
-        } if(Input.isDown("D")
-        || Input.isDown("<right>")) {
-            this.direction = {tx: +1, ty: 0}
-            this.velocity.x = +1 * this.speed * tick
+        this.spinning -= tick
+        if(this.spinning <= 0) {
+            if(Input.isDown("W")
+            || Input.isDown("<up>")) {
+                this.direction = {tx: 0, ty: -1}
+                this.velocity.y = -1 * this.speed * tick
+            } if(Input.isDown("S")
+            || Input.isDown("<down>")) {
+                this.direction = {tx: 0, ty: +1}
+                this.velocity.y = +1 * this.speed * tick
+            } if(Input.isDown("A")
+            || Input.isDown("<left>")) {
+                this.direction = {tx: -1, ty: 0}
+                this.velocity.x = -1 * this.speed * tick
+            } if(Input.isDown("D")
+            || Input.isDown("<right>")) {
+                this.direction = {tx: +1, ty: 0}
+                this.velocity.x = +1 * this.speed * tick
+            }
         }
 
         // do not collide with shop.
@@ -290,6 +293,7 @@ class Gardener {
                     }
                 })
                 delete this.seed
+                this.spinning = 500
             }
 
             if((this.position.tx0 == 21 && this.position.ty0 == 4
@@ -312,16 +316,29 @@ class Gardener {
         }
     }
     getImage() {
-        if(this.direction.tx == 0 && this.direction.ty == -1) {
-            return images["gardener/backwalk.gif"]
-        } else if(this.direction.tx == 0 && this.direction.ty == +1) {
-            return images["gardener/frontwalk.gif"]
-        } else if(this.direction.tx == -1 && this.direction.ty == 0) {
-            return images["gardener/leftwalk.gif"]
-        } else if(this.direction.tx == +1 && this.direction.ty == 0) {
-            return images["gardener/rightwalk.gif"]
+        if(this.spinning <= 0) {
+            if(this.direction.tx == 0 && this.direction.ty == -1) {
+                return images["gardener/backwalk.gif"]
+            } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                return images["gardener/frontwalk.gif"]
+            } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                return images["gardener/leftwalk.gif"]
+            } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                return images["gardener/rightwalk.gif"]
+            } else {
+                return images["gardener/frontwalk.gif"]
+            }
         } else {
-            return images["gardener/frontwalk.gif"]
+            var spin = Math.floor(this.spinning / 62.5) % 8
+            if(spin == 0 || spin == 1) {
+                return images["gardener/frontwalk.gif"]
+            } else if(spin == 2 || spin == 3) {
+                return images["gardener/rightwalk.gif"]
+            } else if(spin == 4 || spin == 5) {
+                return images["gardener/backwalk.gif"]
+            } else if(spin == 6 || spin == 7) {
+                return images["gardener/leftwalk.gif"]
+            }
         }
     }
     render() {
