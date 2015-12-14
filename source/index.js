@@ -187,10 +187,8 @@ class Gardener {
 
         this.speed = TILE * 0.0075
 
-        this.gold = 0
+        this.gold = 10
         this.animating = 0
-        this.seed = plants[0]
-        this.holding = this.seed
         this.step = true
     }
     update(tick) {
@@ -366,16 +364,30 @@ class Gardener {
                 }
             }
         } else if(this.holding != undefined) {
-            if(this.direction.tx == 0 && this.direction.ty == -1) {
-                return images["gardener/magic_still_back.png"]
-            } else if(this.direction.tx == 0 && this.direction.ty == +1) {
-                return images["gardener/magic_still_front.png"]
-            } else if(this.direction.tx == -1 && this.direction.ty == 0) {
-                return images["gardener/magic_still_left.png"]
-            } else if(this.direction.tx == +1 && this.direction.ty == 0) {
-                return images["gardener/magic_still_right.png"]
+            if(this.velocity.x == 0 && this.velocity.y == 0) {
+                if(this.direction.tx == 0 && this.direction.ty == -1) {
+                    return images["gardener/magic_still_back.png"]
+                } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                    return images["gardener/magic_still_front.png"]
+                } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                    return images["gardener/magic_still_left.png"]
+                } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                    return images["gardener/magic_still_right.png"]
+                } else {
+                    return images["gardener/magic_still_front.png"]
+                }
             } else {
-                return images["gardener/magic_still_front.png"]
+                if(this.direction.tx == 0 && this.direction.ty == -1) {
+                    return images["gardener/holding_back.gif"]
+                } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                    return images["gardener/holding_front.gif"]
+                } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                    return images["gardener/holding_left.gif"]
+                } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                    return images["gardener/holding_right.gif"]
+                } else {
+                    return images["gardener/holding_front.gif"]
+                }
             }
         } else {
             if(this.velocity.x == 0 && this.velocity.y == 0) {
@@ -491,6 +503,11 @@ images["gardener/magic_still_front.png"] = require("./images/gardener/magic_stil
 images["gardener/magic_still_back.png"] = require("./images/gardener/magic_still_back.png")
 images["gardener/magic_still_left.png"] = require("./images/gardener/magic_still_left.png")
 images["gardener/magic_still_right.png"] = require("./images/gardener/magic_still_right.png")
+
+images["gardener/holding_front.gif"] = require("./images/gardener/holding_front.gif")
+images["gardener/holding_back.gif"] = require("./images/gardener/holding_back.gif")
+images["gardener/holding_left.gif"] = require("./images/gardener/holding_left.gif")
+images["gardener/holding_right.gif"] = require("./images/gardener/holding_right.gif")
 
 images["plants/seed.png"] = require("./images/plants/seed.png")
 images["plants/rabbit-foot-1.png"] = require("./images/plants/rabbit-foot-1.png")
@@ -920,7 +937,6 @@ game.camera = new Camera(game.gardener)
 game.plants = new Collection()
 game.torches = new Collection()
 game.shop = new Shop()
-game.gardener.gold = 100
 
 class FarmingState {
     render() {
@@ -1189,14 +1205,18 @@ class ShoppingState {
             Input.setUp("<enter>")
             if(game.cursor < this.catalog.length) {
                 var plant = this.catalog[game.cursor]
-                game.gardener.gold -= plant.price
-                game.gardener.holding = plant
-                game.gardener.animation = "spin"
-                game.gardener.animating = 1000
-                game.gardener.seed = plant
-                game.cursor = 0
-                game.state = new FarmingState()
-                sounds["store-buy"].play()
+                if(game.gardener.gold - plant.price >= 0) {
+                    game.gardener.gold -= plant.price
+                    game.gardener.holding = plant
+                    game.gardener.animation = "spin"
+                    game.gardener.animating = 1000
+                    game.gardener.seed = plant
+                    game.cursor = 0
+                    game.state = new FarmingState()
+                    sounds["store-buy"].play()
+                } else {
+                    sounds["blip2"].play()
+                }
             } else {
                 game.cursor = 0
                 game.state = new FarmingState()
