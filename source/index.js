@@ -304,11 +304,15 @@ class Gardener {
             || (this.position.tx0 == 26 && this.position.ty0 == 4
             && this.direction.tx == -1 && this.direction.ty == 0)) {
                 if(this.inventory.length > 0) {
+                    var gold = 0
                     this.inventory.forEach((plant) => {
-                        this.gold += plant.gold
+                        gold += plant.gold
                     })
                     this.inventory = []
-                    sounds["store-sell"].play()
+                    if(gold > 0) {
+                        this.gold += gold
+                        sounds["store-sell"].play()
+                    }
                 }
             } else if(this.seed != undefined) {
                 var positions = []
@@ -520,13 +524,17 @@ images["plants/newt-eye-2.png"] = require("./images/plants/newt-eye-2.png")
 images["plants/newt-eye-3.gif"] = require("./images/plants/newt-eye-3.gif")
 images["plants/lullaby-lily-1.png"] = require("./images/plants/lullaby-lily-1.png")
 images["plants/lullaby-lily-2.gif"] = require("./images/plants/lullaby-lily-2.gif")
+images["plants/cursed-rose-1.png"] = require("./images/plants/cursed-rose-1.png")
+images["plants/cursed-rose-2.gif"] = require("./images/plants/cursed-rose-2.gif")
+images["plants/plague-bramble.png"] = require("./images/plants/plague-bramble.png")
 
 images["plants/bag_rabbit-foot.png"] = require("./images/plants/bag_rabbit-foot.png")
 images["plants/bag_crystal-sprout.png"] = require("./images/plants/bag_crystal-sprout.png")
 images["plants/bag_newt-eye.png"] = require("./images/plants/bag_newt-eye.png")
 images["plants/bag_lullaby-lily.png"] = require("./images/plants/bag_lullaby-lily.png")
+images["plants/bag_cursed-rose.png"] = require("./images/plants/bag_cursed-rose.png")
 
-var sounds = new Object()
+var sounds = window.sounds = new Object()
 sounds["walk1"] = new Audio(require("./sounds/walking1-loud.mp3"))
 sounds["walk2"] = new Audio(require("./sounds/walking2-loud.mp3"))
 sounds["store-buy"] = new Audio(require("./sounds/store-buy.mp3"))
@@ -602,12 +610,12 @@ var plants = window.plants = [
         update: function(tick) {
             this.growth += tick
             if(this.stage == 0) {
-                if(this.growth > 1 * 2000) {
+                if(this.growth > 3 * 1000) {
                     this.stage = 1
                 }
             }
             if(this.stage == 1) {
-                if(this.growth > 1 * 4000) {
+                if(this.growth > 9 * 1000) {
                     this.stage = 2
                 }
             }
@@ -647,7 +655,6 @@ var plants = window.plants = [
             }
             if(this.stage == 3) {
                 this.harvestable = true
-                this.unpassable = true
             }
         }
     },
@@ -656,7 +663,7 @@ var plants = window.plants = [
         blurb: "A volatile plant; if not harvested quickly, it'll rot, and be worthless.",
         formation: 8,
         price: 12,
-        gold: 4,
+        gold: 5,
         images: [
             images["plants/newt-eye-1.png"],
             images["plants/newt-eye-2.png"],
@@ -666,18 +673,18 @@ var plants = window.plants = [
         update: function(tick) {
             this.growth += tick
             if(this.stage == 0) {
-                if(this.growth > 1 * 1000) {
+                if(this.growth > 10 * 1000) {
                     this.stage = 1
                 }
             }
             if(this.stage == 1) {
-                if(this.growth > 10 * 1000) {
+                if(this.growth > 15 * 1000) {
                     this.stage = 2
                 }
             }
             if(this.stage == 2) {
                 this.harvestable = true
-                if(this.growth > 13 * 1000) {
+                if(this.growth > 18 * 1000) {
                     this.stage = 3
                 }
             }
@@ -690,8 +697,8 @@ var plants = window.plants = [
         name: "Lullaby Lily",
         blurb: "A helpful plant; a lullably lily will sing to your other plants to make them grow!",
         formation: 1,
-        price: 28,
-        gold: 10,
+        price: 26,
+        gold: 13,
         images: [
             images["plants/lullaby-lily-1.png"],
             images["plants/lullaby-lily-2.gif"]
@@ -716,6 +723,87 @@ var plants = window.plants = [
                 this.neighbors.forEach(function(position) {
                     if(game.plants[position] != undefined) {
                         game.plants[position].growth += 10
+                    }
+                })
+            }
+        }
+    },
+    {
+        name: "Cursed Rose",
+        blurb: "A spiteful plant; a cursed rose is a weed that will kill anything near it.",
+        formation: 1,
+        price: 50,
+        gold: 0,
+        images: [
+            images["plants/cursed-rose-1.png"],
+            images["plants/cursed-rose-2.gif"]
+        ],
+        holdimage: images["plants/bag_cursed-rose.png"],
+        initialize: function() {
+            this.neighbors = this.position.getNeighbors()
+        },
+        update: function(tick) {
+            this.growth += tick
+            if(this.stage == 0) {
+                if(this.growth > 10 * 1000) {
+                    this.stage = 1
+                }
+            }
+            if(this.stage == 1) {
+                this.harvestable = true
+                if(this.growth > (120 + 10) * 1000) {
+                    this.stage = 2
+                }
+            }
+            if(this.stage == 2) {
+                this.gold = 100
+            }
+            if(this.stage > 0) {
+                this.neighbors.forEach(function(position) {
+                    if(game.plants[position] != undefined) {
+                        window.setTimeout(function() {
+                            game.plants.remove(game.plants[position])
+                        }, 1)
+                    }
+                })
+            }
+        }
+    },
+    {
+        name: "Plague Bramble",
+        blurb: "???",
+        formation: 1,
+        price: 0,
+        gold: 0,
+        images: [
+            images["plants/plague-bramble.png"]
+        ],
+        holdimage: images["plants/bag_cursed-rose.png"],
+        initialize: function() {
+            this.growth += Math.random() * 10
+            this.neighbors = this.position.getNeighbors()
+        },
+        update: function(tick) {
+            this.growth += tick
+            this.harvestable = true
+            if(this.growth > 10 * 1000) {
+                this.growth = 0
+                this.neighbors.some(function(position) {
+                    if(game.plants[position] == undefined
+                    && game.world.tilemap[position].isSoil) {
+                        if(Math.random() < 0.1) {
+                            game.plants.add(new Plant({
+                                position: new Space({
+                                    tx0: parseInt(position.substring(0, position.indexOf("x"))),
+                                    ty0: parseInt(position.substring(position.indexOf("x") + 1)),
+                                }),
+                                images: plants[5].images,
+                                update: plants[5].update,
+                                initialize: plants[5].initialize,
+                                gold: plants[5].gold,
+                            }))
+                            return true
+                        }
                     }
                 })
             }
@@ -938,6 +1026,28 @@ game.plants = new Collection()
 game.torches = new Collection()
 game.shop = new Shop()
 
+for(var tx = 3; tx <= 26; tx++) {
+    for(var ty = 3; ty <= 16; ty++) {
+        var position = tx + "x" + ty
+        if(game.plants[position] == undefined
+        && game.world.tilemap[position].isSoil) {
+            if(Math.random() < 0.2) {
+                var weed = Math.random() < 0.05 ? 4 : 5
+                game.plants.add(new Plant({
+                    position: new Space({
+                        tx0: parseInt(position.substring(0, position.indexOf("x"))),
+                        ty0: parseInt(position.substring(position.indexOf("x") + 1)),
+                    }),
+                    images: (weed == 4 ? [images["plants/cursed-rose-1.png"]] : []).concat(plants[weed].images),
+                    update: plants[weed].update,
+                    initialize: plants[weed].initialize,
+                    gold: plants[weed].gold,
+                }))
+            }
+        }
+    }
+}
+
 class FarmingState {
     render() {
         return (
@@ -1107,6 +1217,7 @@ class ShoppingState {
             plants[1],
             plants[2],
             plants[3],
+            plants[4],
         ]
     }
     render() {
