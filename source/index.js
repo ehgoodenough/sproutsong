@@ -298,7 +298,9 @@ class Gardener {
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 20 && this.position.ty0 == 4
             && this.direction.tx == +1 && this.direction.ty == 0)) {
-                game.state = new ShoppingState()
+                if(this.holding == undefined) {
+                    game.state = new ShoppingState()
+                }
             } else  if((this.position.tx0 == 25 && this.position.ty0 == 5
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 26 && this.position.ty0 == 4
@@ -736,7 +738,6 @@ var plants = window.plants = [
                 })
             }
             if(!this.sound || this.sound.ended) {
-                console.log("yo")
                 this.sound = sounds["singing" + (Math.floor(Math.random() * 8) + 1)]
                 this.sound.play()
             }
@@ -833,11 +834,6 @@ var getDistanceBetweenPoints = function(p1, p2) {
 
     return Math.sqrt((x * x) + (y * y))
 }
-
-window.setTimeout(function() {
-    game.gardener.seed = plants[3]
-    game.gardener.holding = plants[3]
-})
 
 class Plant {
     constructor(that) {
@@ -1210,13 +1206,7 @@ class AboutState {
                         plants to sell at the market!
                     </div>
                     <div>
-                        ...put better blurb here...
-                    </div>
-                    <div>
-                        We are Jam Sandwich!
-                    </div>
-                    <div>
-                        We hope you enjoy the game!
+                        Your family's farm has long been known as the best provider of magical plants of all kinds.  Tend to the crops and sell them at the…farm has long been known as the best provider of magical plants of all kinds.  Tend to the crops and sell them at the family store, Mystic Flora
                     </div>
                     <div>
                         Developed for Ludum Dare 34, where the theme was <b>Growing.</b>
@@ -1225,6 +1215,9 @@ class AboutState {
                         <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
                         <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
                         <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
+                    </div>
+                    <div>
+                        We hope you enjoy the game!
                     </div>
                 </section>
             </div>
@@ -1347,8 +1340,6 @@ class ShoppingState {
                 if(game.gardener.gold - plant.price >= 0) {
                     game.gardener.gold -= plant.price
                     game.gardener.holding = plant
-                    game.gardener.animation = "spin"
-                    game.gardener.animating = 1000
                     game.gardener.seed = plant
                     game.cursor = 0
                     game.state = new FarmingState()
@@ -1368,6 +1359,7 @@ if(STAGE == "PRODUCTION") {
     game.state = new TitleState()
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
+    game.state = new AboutState()
     music.pause()
 }
 game.cursor = 0
