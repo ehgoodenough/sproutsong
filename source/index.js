@@ -191,6 +191,7 @@ class Gardener {
         this.animating = 0
         this.seed = plants[0]
         this.holding = this.seed
+        this.step = true
     }
     update(tick) {
         this.animating -= tick
@@ -256,6 +257,12 @@ class Gardener {
                         ty0: this.position.ty0 + (this.direction.ty * -1),
                     })
                 })
+                this.step = !this.step
+                if(this.step) {
+                    sounds["walk2"].play()
+                } else {
+                    sounds["walk1"].play()
+                }
             }
         }
 
@@ -283,6 +290,7 @@ class Gardener {
             if(plant.harvestable) {
                 this.inventory.push(plant)
                 game.plants.remove(plant)
+                sounds["harvesting"].play()
             }
         }
 
@@ -319,6 +327,7 @@ class Gardener {
                     this.animation = "spin"
                     delete this.holding
                     delete this.seed
+                    sounds["tilling" + (Math.floor(Math.random() * 3) + 1)].play()
                 }
             }
 
@@ -334,10 +343,13 @@ class Gardener {
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 26 && this.position.ty0 == 4
             && this.direction.tx == -1 && this.direction.ty == 0)) {
-                this.inventory.forEach((plant) => {
-                    this.gold += plant.gold
-                })
-                this.inventory = []
+                if(this.inventory.length > 0) {
+                    this.inventory.forEach((plant) => {
+                        this.gold += plant.gold
+                    })
+                    this.inventory = []
+                    sounds["store-sell"].play()
+                }
             }
         }
     }
@@ -500,6 +512,29 @@ images["plants/bag_rabbit-foot.png"] = require("./images/plants/bag_rabbit-foot.
 images["plants/bag_crystal-sprout.png"] = require("./images/plants/bag_crystal-sprout.png")
 images["plants/bag_newt-eye.png"] = require("./images/plants/bag_newt-eye.png")
 images["plants/bag_lullaby-lily.png"] = require("./images/plants/bag_lullaby-lily.png")
+
+var sounds = new Object()
+sounds["walk1"] = new Audio(require("./sounds/walking1-loud.mp3"))
+sounds["walk2"] = new Audio(require("./sounds/walking2-loud.mp3"))
+sounds["store-buy"] = new Audio(require("./sounds/store-buy.mp3"))
+sounds["store-sell"] = new Audio(require("./sounds/store-sell.mp3"))
+sounds["harvesting"] = new Audio(require("./sounds/harvesting-plant.mp3"))
+sounds["tilling1"] = new Audio(require("./sounds/tilling1.mp3"))
+sounds["tilling2"] = new Audio(require("./sounds/tilling2.mp3"))
+sounds["tilling3"] = new Audio(require("./sounds/tilling3.mp3"))
+
+sounds["saving"] = new Audio(require("./sounds/saving.mp3"))
+sounds["blip2"] = new Audio(require("./sounds/blip2.mp3"))
+sounds["blip3"] = new Audio(require("./sounds/blip3.mp3"))
+sounds["grow1"] = new Audio(require("./sounds/growing1.mp3"))
+sounds["grow2"] = new Audio(require("./sounds/growing2.mp3"))
+sounds["grow3"] = new Audio(require("./sounds/growing3.mp3"))
+
+sounds["walk1"].volume = 0.5
+sounds["walk2"].volume = 0.5
+
+var music = require("./sounds/Sproutsong.mp3")
+new Audio(music).play()
 
 class Tile {
     constructor(data) {
@@ -857,7 +892,6 @@ class Poof {
         this.maxfading = 100
     }
     update(tick) {
-        console.log(tick)
         this.fading -= tick
         if(this.fading < 0) {
             delete game.poofs
@@ -1154,6 +1188,7 @@ class ShoppingState {
                 game.gardener.seed = plant
                 game.cursor = 0
                 game.state = new FarmingState()
+                sounds["store-buy"].play()
             } else {
                 game.cursor = 0
                 game.state = new FarmingState()
