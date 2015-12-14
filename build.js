@@ -42,8 +42,8 @@ rimraf("./builds", function() {
                 {test: /\.html$/i, loader: new WebpackExtract("html", "index.html").extract(["html-loader"])},
                 {test: /\.(png|jpe?g|gif|svg)$/i, loaders: ["url-loader", "image-webpack-loader"]},
                 {test: /\.tiled\.json$/i, exclude: /(node_modules)/i, loader: "tiled-webpack-loader"},
-                //{test: /\.json$/i, exclude: /(node_modules)/i, loader: "json-loader"},
                 {test: /\.(ttf|otf|woff|svg)$/i, loader: "url-loader"},
+                {test: /\.mp3$/i, loader: "url-loader"},
             ]
         },
         resolve: {
@@ -74,6 +74,9 @@ rimraf("./builds", function() {
             if(jserrors.length > 0) {
                 jserrors.forEach(function(jserror) {console.log(jserror)})
                 fs.writeFileSync("./builds/web/index.js", injectviajs(jserrors))
+            }
+            if(csserrors.length > 0) {
+                csserrors.forEach(function(csserror) {console.log(csserror)})
             }
         }
         if(MODE == "SERVER") {

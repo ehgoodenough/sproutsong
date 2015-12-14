@@ -6,7 +6,7 @@
     margin: auto;
     position: fixed;
     overflow: hidden;
-
+    
     @media(min-aspect-ratio: #{$width + "/" + $height}) {
         font-size: (($width/$height)*100vh)/$width;
         width: ($width/$height)*100vh;

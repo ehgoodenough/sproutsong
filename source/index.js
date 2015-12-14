@@ -149,7 +149,7 @@ class Point {
 class Shop {
     constructor() {
         this.position = new Space({
-            tx0: 21, ty0: 4
+            tx0: 21, ty0: 5
         })
         this.tw = 5
         this.th = 4
@@ -188,29 +188,34 @@ class Gardener {
         this.speed = TILE * 0.01
 
         this.gold = 0
-        this.spinning = 0
+        this.animating = 0
         this.seed = plants[0]
+        this.holding = this.seed
+        this.step = true
     }
     update(tick) {
-        this.spinning -= tick
-        if(this.spinning <= 0) {
-            if(Input.isDown("W")
-            || Input.isDown("<up>")) {
-                this.direction = {tx: 0, ty: -1}
-                this.velocity.y = -1 * this.speed * tick
-            } if(Input.isDown("S")
-            || Input.isDown("<down>")) {
-                this.direction = {tx: 0, ty: +1}
-                this.velocity.y = +1 * this.speed * tick
-            } if(Input.isDown("A")
-            || Input.isDown("<left>")) {
-                this.direction = {tx: -1, ty: 0}
-                this.velocity.x = -1 * this.speed * tick
-            } if(Input.isDown("D")
-            || Input.isDown("<right>")) {
-                this.direction = {tx: +1, ty: 0}
-                this.velocity.x = +1 * this.speed * tick
-            }
+        this.animating -= tick
+
+        if(Input.isDown("W")
+        || Input.isDown("<up>")) {
+            this.direction = {tx: 0, ty: -1}
+            this.velocity.y = -1 * this.speed * tick
+        } else if(Input.isDown("S")
+        || Input.isDown("<down>")) {
+            this.direction = {tx: 0, ty: +1}
+            this.velocity.y = +1 * this.speed * tick
+        } else {
+            this.velocity.y = 0
+        } if(Input.isDown("A")
+        || Input.isDown("<left>")) {
+            this.direction = {tx: -1, ty: 0}
+            this.velocity.x = -1 * this.speed * tick
+        } else if(Input.isDown("D")
+        || Input.isDown("<right>")) {
+            this.direction = {tx: +1, ty: 0}
+            this.velocity.x = +1 * this.speed * tick
+        } else {
+            this.velocity.x = 0
         }
 
         // do not collide with shop.
@@ -226,6 +231,14 @@ class Gardener {
         && this.position.y0 + this.velocity.y < (game.shop.position.ty0) * TILE) {
             this.velocity.y = 0
         }
+        if(Math.floor((this.position.x0 + this.velocity.x) / TILE) == 6
+        && Math.floor((this.position.y0) / TILE) == 15) {
+            this.velocity.x = 0
+        }
+        if(Math.floor((this.position.x0 + this.velocity.x) / TILE) == 6
+        && Math.floor((this.position.y0 + this.velocity.y) / TILE) == 15) {
+            this.velocity.y = 0
+        }
 
         // do not collide with world.
         // world.getTile(this.position.toSpace({x: this.velocity.x})).some((tile) => {
@@ -235,21 +248,35 @@ class Gardener {
         //     }
         // })
 
+        if(Math.floor((this.position.x0 + this.velocity.x) / TILE) != this.position.tx0
+        || Math.floor((this.position.y0 + this.velocity.y) / TILE) != this.position.ty0) {
+            if(game.poofs == undefined) {
+                game.poofs = new Poof({
+                    position: new Space({
+                        tx0: this.position.tx0 + (this.direction.tx * -1),
+                        ty0: this.position.ty0 + (this.direction.ty * -1),
+                    })
+                })
+                this.step = !this.step
+                if(this.step) {
+                    sounds["walk2"].play()
+                } else {
+                    sounds["walk1"].play()
+                }
+            }
+        }
+
         // translate.
         this.position.x0 += this.velocity.x
         this.position.y0 += this.velocity.y
-
-        // deceleration.
-        this.velocity.x = 0
-        this.velocity.y = 0
 
         // do not leave the world.
         if(this.position.x0 < 0) {
             this.position.x0 = 0
         } if(this.position.x0 > game.world.width - TILE) {
             this.position.x0 = game.world.width - TILE
-        } if(this.position.y0 < 0) {
-            this.position.y0 = 0
+        } if(this.position.ty0 < 1) {
+            this.position.ty0 = 1
         } if(this.position.y0 > game.world.height - TILE) {
             this.position.y0 = game.world.height - TILE
         }
@@ -263,6 +290,7 @@ class Gardener {
             if(plant.harvestable) {
                 this.inventory.push(plant)
                 game.plants.remove(plant)
+                sounds["harvesting"].play()
             }
         }
 
@@ -275,10 +303,12 @@ class Gardener {
                 } if(this.seed.formation == 1 || this.seed.formation == 9) {
                     positions.push(this.position.toString())
                 }
+                var canPlant = false
                 positions.forEach((position) => {
                     var tile = game.world.tilemap[position]
                     var plant = game.plants[position]
                     if(!!tile && tile.isSoil && !plant) {
+                        canPlant = true
                         game.plants.add(new Plant({
                             position: new Space({
                                 tx0: tile.position.tx0,
@@ -292,54 +322,91 @@ class Gardener {
                         }))
                     }
                 })
-                delete this.seed
-                this.spinning = 500
+                if(canPlant == true) {
+                    this.animating = 500
+                    this.animation = "spin"
+                    delete this.holding
+                    delete this.seed
+                    sounds["tilling" + (Math.floor(Math.random() * 3) + 1)].play()
+                }
             }
 
-            if((this.position.tx0 == 21 && this.position.ty0 == 4
+            if((this.position.tx0 == 21 && this.position.ty0 == 5
             && this.direction.tx == 0 && this.direction.ty == -1)
-            || (this.position.tx0 == 20 && this.position.ty0 == 3
+            || (this.position.tx0 == 20 && this.position.ty0 == 4
             && this.direction.tx == +1 && this.direction.ty == 0)) {
                 game.state = new ShoppingState()
             }
 
             // can interact with shipping bin
-            if((this.position.tx0 == 25 && this.position.ty0 == 4
+            if((this.position.tx0 == 25 && this.position.ty0 == 5
             && this.direction.tx == 0 && this.direction.ty == -1)
-            || (this.position.tx0 == 26 && this.position.ty0 == 3
+            || (this.position.tx0 == 26 && this.position.ty0 == 4
             && this.direction.tx == -1 && this.direction.ty == 0)) {
-                this.inventory.forEach((plant) => {
-                    this.gold += plant.gold
-                })
-                this.inventory = []
+                if(this.inventory.length > 0) {
+                    this.inventory.forEach((plant) => {
+                        this.gold += plant.gold
+                    })
+                    this.inventory = []
+                    sounds["store-sell"].play()
+                }
             }
         }
     }
     getImage() {
-        if(this.spinning <= 0) {
+        if(this.animating > 0) {
+            if(this.animation == "spin") {
+                return images["gardener/magic_spin.gif"]
+            } else if(this.animation == "drop") {
+                if(this.direction.tx == 0 && this.direction.ty == -1) {
+                    return images["gardener/magic_back.gif"]
+                } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                    return images["gardener/magic_front.gif"]
+                } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                    return images["gardener/magic_left.gif"]
+                } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                    return images["gardener/magic_right.gif"]
+                } else {
+                    return images["gardener/magic_front.gif"]
+                }
+            }
+        } else if(this.holding != undefined) {
             if(this.direction.tx == 0 && this.direction.ty == -1) {
-                return images["gardener/backwalk.gif"]
+                return images["gardener/magic_still_back.png"]
             } else if(this.direction.tx == 0 && this.direction.ty == +1) {
-                return images["gardener/frontwalk.gif"]
+                return images["gardener/magic_still_front.png"]
             } else if(this.direction.tx == -1 && this.direction.ty == 0) {
-                return images["gardener/leftwalk.gif"]
+                return images["gardener/magic_still_left.png"]
             } else if(this.direction.tx == +1 && this.direction.ty == 0) {
-                return images["gardener/rightwalk.gif"]
+                return images["gardener/magic_still_right.png"]
             } else {
-                return images["gardener/frontwalk.gif"]
+                return images["gardener/magic_still_front.png"]
             }
         } else {
-            var spin = Math.floor(this.spinning / 62.5) % 8
-            if(spin == 0 || spin == 1) {
-                return images["gardener/frontwalk.gif"]
-            } else if(spin == 2 || spin == 3) {
-                return images["gardener/rightwalk.gif"]
-            } else if(spin == 4 || spin == 5) {
-                return images["gardener/backwalk.gif"]
-            } else if(spin == 6 || spin == 7) {
-                return images["gardener/leftwalk.gif"]
+            if(this.velocity.x == 0 && this.velocity.y == 0) {
+                if(this.direction.tx == 0 && this.direction.ty == -1) {
+                    return images["gardener/idle_back.gif"]
+                } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                    return images["gardener/idle_front.gif"]
+                } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                    return images["gardener/idle_left.gif"]
+                } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                    return images["gardener/idle_right.gif"]
+                }
+            } else {
+                if(this.direction.tx == 0 && this.direction.ty == -1) {
+                    return images["gardener/walk_back.gif"]
+                } else if(this.direction.tx == 0 && this.direction.ty == +1) {
+                    return images["gardener/walk_front.gif"]
+                } else if(this.direction.tx == -1 && this.direction.ty == 0) {
+                    return images["gardener/walk_left.gif"]
+                } else if(this.direction.tx == +1 && this.direction.ty == 0) {
+                    return images["gardener/walk_right.gif"]
+                }
             }
         }
+
+        return images["gardener/idle_front.gif"]
     }
     render() {
         return (
@@ -354,20 +421,34 @@ class Gardener {
                 height: this.position.h + TILE + "em",
                 zIndex: this.position.ty0 * TILE,
                 transitionProperty: "top left",
-                transitionDuration: "0.2s",
+                transitionDuration: "0.25s",
                 position: "absolute"
-            }}/>
+            }}>
+                {!!this.holding ? (
+                    <div style={{
+                        width: TILE + "em",
+                        height: TILE + "em",
+                        position: "absolute",
+                        top: -0.5 * TILE + "em",
+                        backgroundSize: "contain",
+                        backgroundPosition: "bottom",
+                        backgroundRepeat: "no-repeat",
+                        backgroundImage: "url(" + this.holding.holdimage + ")",
+                    }}/>
+                ) : ""}
+            </div>
         )
     }
     renderGUI() {
         return (
             <div id="gui" style={{
                 position: "absolute",
-                width: 128 + "em",
-                height: 116 + "em",
+                width: 142 + "em",
+                height: 129 + "em",
+                zIndex: 10000,
                 right: "0em",
                 bottom: "0em",
-                backgroundImage: "url(" + images["gui-back.png"] + ")",
+                backgroundImage: "url(" + images["gui.png"] + ")",
                 backgroundRepeat: "no-repeat",
                 backgroundSize: "contain",
             }}>
@@ -392,23 +473,68 @@ class Gardener {
 }
 
 var images = new Object()
+images["poof.png"] = require("./images/poff.png")
+images["gui.png"] = require("./images/gui.png")
 images["shop.png"] = require("./images/shop.png")
-images["gui-back.png"] = require("./images/gui-back.png")
-images["gardener/backwalk.gif"] = require("./images/gardener/backwalk.gif")
-images["gardener/frontwalk.gif"] = require("./images/gardener/frontwalk.gif")
-images["gardener/leftwalk.gif"] = require("./images/gardener/leftwalk.gif")
-images["gardener/rightwalk.gif"] = require("./images/gardener/rightwalk.gif")
+images["textbox.png"] = require("./images/textbox.png")
+
+images["gardener/idle_back.gif"] = require("./images/gardener/idle_back.gif")
+images["gardener/idle_front.gif"] = require("./images/gardener/idle_front.gif")
+images["gardener/idle_left.gif"] = require("./images/gardener/idle_left.gif")
+images["gardener/idle_right.gif"] = require("./images/gardener/idle_right.gif")
+images["gardener/walk_back.gif"] = require("./images/gardener/walk_back.gif")
+images["gardener/walk_front.gif"] = require("./images/gardener/walk_front.gif")
+images["gardener/walk_left.gif"] = require("./images/gardener/walk_left.gif")
+images["gardener/walk_right.gif"] = require("./images/gardener/walk_right.gif")
+images["gardener/magic_front.gif"] = require("./images/gardener/magic_front.gif")
+images["gardener/magic_back.gif"] = require("./images/gardener/magic_back.gif")
+images["gardener/magic_left.gif"] = require("./images/gardener/magic_left.gif")
+images["gardener/magic_right.gif"] = require("./images/gardener/magic_right.gif")
+images["gardener/magic_spin.gif"] = require("./images/gardener/magic_spin.gif")
+images["gardener/magic_still_front.png"] = require("./images/gardener/magic_still_front.png")
+images["gardener/magic_still_back.png"] = require("./images/gardener/magic_still_back.png")
+images["gardener/magic_still_left.png"] = require("./images/gardener/magic_still_left.png")
+images["gardener/magic_still_right.png"] = require("./images/gardener/magic_still_right.png")
+
+images["plants/seed.png"] = require("./images/plants/seed.png")
 images["plants/rabbit-foot-1.png"] = require("./images/plants/rabbit-foot-1.png")
-images["plants/rabbit-foot-2.png"] = require("./images/plants/rabbit-foot-2.png")
+images["plants/rabbit-foot-2.gif"] = require("./images/plants/rabbit-foot-2.gif")
 images["plants/crystal-sprout-1.png"] = require("./images/plants/crystal-sprout-1.png")
 images["plants/crystal-sprout-2.png"] = require("./images/plants/crystal-sprout-2.png")
-images["plants/crystal-sprout-3.png"] = require("./images/plants/crystal-sprout-3.png")
+images["plants/crystal-sprout-3.gif"] = require("./images/plants/crystal-sprout-3.gif")
 images["plants/newt-eye-1.png"] = require("./images/plants/newt-eye-1.png")
 images["plants/newt-eye-2.png"] = require("./images/plants/newt-eye-2.png")
-images["plants/newt-eye-3.png"] = require("./images/plants/newt-eye-3.png")
+images["plants/newt-eye-3.gif"] = require("./images/plants/newt-eye-3.gif")
 images["plants/lullaby-lily-1.png"] = require("./images/plants/lullaby-lily-1.png")
-images["plants/lullaby-lily-2.png"] = require("./images/plants/lullaby-lily-2.png")
-images["plants/seed.png"] = require("./images/plants/seed.png")
+images["plants/lullaby-lily-2.gif"] = require("./images/plants/lullaby-lily-2.gif")
+
+images["plants/bag_rabbit-foot.png"] = require("./images/plants/bag_rabbit-foot.png")
+images["plants/bag_crystal-sprout.png"] = require("./images/plants/bag_crystal-sprout.png")
+images["plants/bag_newt-eye.png"] = require("./images/plants/bag_newt-eye.png")
+images["plants/bag_lullaby-lily.png"] = require("./images/plants/bag_lullaby-lily.png")
+
+var sounds = new Object()
+sounds["walk1"] = new Audio(require("./sounds/walking1-loud.mp3"))
+sounds["walk2"] = new Audio(require("./sounds/walking2-loud.mp3"))
+sounds["store-buy"] = new Audio(require("./sounds/store-buy.mp3"))
+sounds["store-sell"] = new Audio(require("./sounds/store-sell.mp3"))
+sounds["harvesting"] = new Audio(require("./sounds/harvesting-plant.mp3"))
+sounds["tilling1"] = new Audio(require("./sounds/tilling1.mp3"))
+sounds["tilling2"] = new Audio(require("./sounds/tilling2.mp3"))
+sounds["tilling3"] = new Audio(require("./sounds/tilling3.mp3"))
+
+sounds["saving"] = new Audio(require("./sounds/saving.mp3"))
+sounds["blip2"] = new Audio(require("./sounds/blip2.mp3"))
+sounds["blip3"] = new Audio(require("./sounds/blip3.mp3"))
+sounds["grow1"] = new Audio(require("./sounds/growing1.mp3"))
+sounds["grow2"] = new Audio(require("./sounds/growing2.mp3"))
+sounds["grow3"] = new Audio(require("./sounds/growing3.mp3"))
+
+sounds["walk1"].volume = 0.5
+sounds["walk2"].volume = 0.5
+
+var music = require("./sounds/Sproutsong.mp3")
+new Audio(music).play()
 
 class Tile {
     constructor(data) {
@@ -455,8 +581,9 @@ var plants = window.plants = [
         gold: 1, //sell to shop
         images: [
             images["plants/rabbit-foot-1.png"],
-            images["plants/rabbit-foot-2.png"]
+            images["plants/rabbit-foot-2.gif"]
         ],
+        holdimage: images["plants/bag_rabbit-foot.png"],
         update: function(tick) {
             this.growth += tick
             if(this.stage == 0) {
@@ -483,8 +610,9 @@ var plants = window.plants = [
         images: [
             images["plants/crystal-sprout-1.png"],
             images["plants/crystal-sprout-2.png"],
-            images["plants/crystal-sprout-3.png"]
+            images["plants/crystal-sprout-3.gif"]
         ],
+        holdimage: images["plants/bag_crystal-sprout.png"],
         update: function(tick) {
             this.growth += tick
             if(this.stage == 0) {
@@ -504,6 +632,7 @@ var plants = window.plants = [
             }
             if(this.stage == 3) {
                 this.harvestable = true
+                this.unpassable = true
             }
         }
     },
@@ -516,8 +645,9 @@ var plants = window.plants = [
         images: [
             images["plants/newt-eye-1.png"],
             images["plants/newt-eye-2.png"],
-            images["plants/newt-eye-3.png"]
+            images["plants/newt-eye-3.gif"]
         ],
+        holdimage: images["plants/bag_newt-eye.png"],
         update: function(tick) {
             this.growth += tick
             if(this.stage == 0) {
@@ -549,8 +679,9 @@ var plants = window.plants = [
         gold: 10,
         images: [
             images["plants/lullaby-lily-1.png"],
-            images["plants/lullaby-lily-2.png"]
+            images["plants/lullaby-lily-2.gif"]
         ],
+        holdimage: images["plants/bag_lullaby-lily.png"],
         initialize: function() {
             this.neighbors = this.position.getNeighbors()
         },
@@ -591,11 +722,6 @@ class Plant {
 
         this.key = this.position.tx0 + "x" + this.position.ty0
 
-        this.colors = [
-            "#C00",
-            "#0C0",
-            "#00C",
-        ]
         this.growth = Math.random() * 1000
         this.stage = 0
     }
@@ -759,11 +885,40 @@ class Collection {
     }
 }
 
+class Poof {
+    constructor(data) {
+        this.position = data.position
+        this.fading = 200
+        this.maxfading = 100
+    }
+    update(tick) {
+        this.fading -= tick
+        if(this.fading < 0) {
+            delete game.poofs
+        }
+    }
+    render() {
+        return (
+            <div key={this.key} style={{
+                    position: "absolute",
+                    zIndex: 1,
+                    top: this.position.y0 + "em",
+                    left: this.position.x0 + "em",
+                    opacity: (this.fading / this.maxfading) * 0.25,
+                    backgroundImage: "url(" + images["poof.png"] + ")",
+                    height: TILE + "em",
+                    width: TILE + "em",
+            }}/>
+        )
+    }
+}
+
 var game = window.game = new Object()
 game.gardener = new Gardener()
 game.world = new World(require("./tilemaps/farm.tiled.json"))
 game.camera = new Camera(game.gardener)
 game.plants = new Collection()
+game.torches = new Collection()
 game.shop = new Shop()
 game.gardener.gold = 100
 
@@ -775,15 +930,16 @@ class FarmingState {
                     {game.world.render()}
                     {game.shop.render()}
                     {game.plants.render()}
+                    {game.poofs ? game.poofs.render() : ""}
                     {game.gardener.render()}
                 </div>
                 {game.gardener.renderGUI()}
-                <div id="pause-menu" style={{opacity: game.paused ? 1 : 0}}>
+                <div id="pause-menu" style={{bottom: game.paused ? 0 : -2 * HEIGHT + "em"}}>
                     <section>
                         <h2>Paused!</h2>
                         <div>---</div>
-                        <div style={{color: game.cursor == 0 ? "#111" : "inherit"}}>resume game</div>
-                        <div style={{color: game.cursor == 1 ? "#111" : "inherit"}}>return to menu</div>
+                        <div style={{color: game.cursor == 0 ? colors.red : "inherit"}}>resume game</div>
+                        <div style={{color: game.cursor == 1 ? colors.red : "inherit"}}>return to menu</div>
                     </section>
                 </div>
             </div>
@@ -814,6 +970,7 @@ class FarmingState {
                 } else if(game.cursor == 1) {
                     game.state = new TitleState()
                     game.paused = false
+                    game.cursor = 0
                 }
             }
         } else {
@@ -821,19 +978,35 @@ class FarmingState {
             game.camera.update(tick)
             game.plants.update(tick)
             game.shop.update(tick)
+            if(game.poofs) game.poofs.update(tick)
         }
     }
+}
+
+var colors = {
+    red: "rgb(185,103,39)",
+    background: "rgb(255,203,124)",
+    blue: "rgb(106,151,197)",
+    white: "#EEE",
+    black: "#111",
 }
 
 class TitleState {
     render() {
         return (
-            <div id="title-state">
-                <section>
-                    <div style={{fontSize: "2em", fontWeight: "bold"}}>Magic Garden</div>
-                    <div style={{color: game.cursor === 0 ? "#C00" : "#111"}}>Play</div>
-                    <div style={{color: game.cursor === 1 ? "#C00" : "#111"}}>About</div>
-                </section>
+            <div id="title-screen">
+                <div id="backdrop"></div>
+                <header>
+                    <div id="sign">
+                        <div id="signpost-1"/>
+                        <div id="signpost-2"/>
+                        <div id="signboard"/>
+                    </div>
+                </header>
+                <div id="navigation">
+                    <div style={{color: game.cursor === 0 ? colors.white : colors.black}}>Play</div>
+                    <div style={{color: game.cursor === 1 ? colors.white : colors.black}}>About</div>
+                </div>
             </div>
         )
     }
@@ -868,7 +1041,7 @@ class TitleState {
 class AboutState {
     render() {
         return (
-            <div id="about-state">
+            <div id="about-screen">
                 <section>
                     <div>
                         Grow your garden of magical
@@ -878,19 +1051,18 @@ class AboutState {
                         ...put better blurb here...
                     </div>
                     <div>
-                        Developed for Ludum Dare 34, where
-                        the theme was <b>Growing.</b>
+                        We are Jam Sandwich!
                     </div>
                     <div>
-                        We are Jam Sandwich!
+                        We hope you enjoy the game!
+                    </div>
+                    <div>
+                        Developed for Ludum Dare 34, where the theme was <b>Growing.</b>
                     </div>
                     <div>
                         <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
                         <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
                         <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
-                    </div>
-                    <div>
-                        We hope you enjoy the game!
                     </div>
                 </section>
             </div>
@@ -1010,9 +1182,13 @@ class ShoppingState {
             if(game.cursor < this.catalog.length) {
                 var plant = this.catalog[game.cursor]
                 game.gardener.gold -= plant.price
+                game.gardener.holding = plant
+                game.gardener.animation = "spin"
+                game.gardener.animating = 1000
                 game.gardener.seed = plant
                 game.cursor = 0
                 game.state = new FarmingState()
+                sounds["store-buy"].play()
             } else {
                 game.cursor = 0
                 game.state = new FarmingState()
