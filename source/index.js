@@ -288,7 +288,7 @@ class Gardener {
             if(plant.harvestable) {
                 this.inventory.push(plant)
                 game.plants.remove(plant)
-                sounds["harvesting"].play()
+                //sounds["harvesting"].play()
             }
         }
 
@@ -551,6 +551,15 @@ sounds["grow1"] = new Audio(require("./sounds/growing1.mp3"))
 sounds["grow2"] = new Audio(require("./sounds/growing2.mp3"))
 sounds["grow3"] = new Audio(require("./sounds/growing3.mp3"))
 
+sounds["singing1"] = new Audio(require("./sounds/singing1.mp3"))
+sounds["singing2"] = new Audio(require("./sounds/singing2.mp3"))
+sounds["singing3"] = new Audio(require("./sounds/singing3.mp3"))
+sounds["singing4"] = new Audio(require("./sounds/singing4.mp3"))
+sounds["singing5"] = new Audio(require("./sounds/singing5.mp3"))
+sounds["singing6"] = new Audio(require("./sounds/singing6.mp3"))
+sounds["singing7"] = new Audio(require("./sounds/singing7.mp3"))
+sounds["singing8"] = new Audio(require("./sounds/singing8.mp3"))
+
 sounds["walk1"].volume = 0.5
 sounds["walk2"].volume = 0.5
 
@@ -726,6 +735,13 @@ var plants = window.plants = [
                     }
                 })
             }
+            if(!this.sound || this.sound.ended) {
+                console.log("yo")
+                this.sound = sounds["singing" + (Math.floor(Math.random() * 8) + 1)]
+                this.sound.play()
+            }
+            var distance =getDistanceBetweenPoints(this.position, game.gardener.position)
+            this.sound.volume = (1 - (Math.min(distance / (TILE * 8), 1)))
         }
     },
     {
@@ -810,6 +826,18 @@ var plants = window.plants = [
         }
     }
 ]
+
+var getDistanceBetweenPoints = function(p1, p2) {
+    var x = p1.x - p2.x
+    var y = p1.y - p2.y
+
+    return Math.sqrt((x * x) + (y * y))
+}
+
+window.setTimeout(function() {
+    game.gardener.seed = plants[3]
+    game.gardener.holding = plants[3]
+})
 
 class Plant {
     constructor(that) {
