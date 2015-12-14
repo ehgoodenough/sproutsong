@@ -288,7 +288,7 @@ class Gardener {
             if(plant.harvestable) {
                 this.inventory.push(plant)
                 game.plants.remove(plant)
-                sounds["harvesting"].play()
+                //sounds["harvesting"].play()
             }
         }
 
@@ -298,7 +298,9 @@ class Gardener {
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 20 && this.position.ty0 == 4
             && this.direction.tx == +1 && this.direction.ty == 0)) {
-                game.state = new ShoppingState()
+                if(this.holding == undefined) {
+                    game.state = new ShoppingState()
+                }
             } else  if((this.position.tx0 == 25 && this.position.ty0 == 5
             && this.direction.tx == 0 && this.direction.ty == -1)
             || (this.position.tx0 == 26 && this.position.ty0 == 4
@@ -551,6 +553,15 @@ sounds["grow1"] = new Audio(require("./sounds/growing1.mp3"))
 sounds["grow2"] = new Audio(require("./sounds/growing2.mp3"))
 sounds["grow3"] = new Audio(require("./sounds/growing3.mp3"))
 
+sounds["singing1"] = new Audio(require("./sounds/singing1.mp3"))
+sounds["singing2"] = new Audio(require("./sounds/singing2.mp3"))
+sounds["singing3"] = new Audio(require("./sounds/singing3.mp3"))
+sounds["singing4"] = new Audio(require("./sounds/singing4.mp3"))
+sounds["singing5"] = new Audio(require("./sounds/singing5.mp3"))
+sounds["singing6"] = new Audio(require("./sounds/singing6.mp3"))
+sounds["singing7"] = new Audio(require("./sounds/singing7.mp3"))
+sounds["singing8"] = new Audio(require("./sounds/singing8.mp3"))
+
 sounds["walk1"].volume = 0.5
 sounds["walk2"].volume = 0.5
 
@@ -726,6 +737,12 @@ var plants = window.plants = [
                     }
                 })
             }
+            if(!this.sound || this.sound.ended) {
+                this.sound = sounds["singing" + (Math.floor(Math.random() * 8) + 1)]
+                this.sound.play()
+            }
+            var distance =getDistanceBetweenPoints(this.position, game.gardener.position)
+            this.sound.volume = (1 - (Math.min(distance / (TILE * 8), 1)))
         }
     },
     {
@@ -810,6 +827,13 @@ var plants = window.plants = [
         }
     }
 ]
+
+var getDistanceBetweenPoints = function(p1, p2) {
+    var x = p1.x - p2.x
+    var y = p1.y - p2.y
+
+    return Math.sqrt((x * x) + (y * y))
+}
 
 class Plant {
     constructor(that) {
@@ -1182,13 +1206,7 @@ class AboutState {
                         plants to sell at the market!
                     </div>
                     <div>
-                        ...put better blurb here...
-                    </div>
-                    <div>
-                        We are Jam Sandwich!
-                    </div>
-                    <div>
-                        We hope you enjoy the game!
+                        Your family's farm has long been known as the best provider of magical plants of all kinds.  Tend to the crops and sell them at the…farm has long been known as the best provider of magical plants of all kinds.  Tend to the crops and sell them at the family store, Mystic Flora
                     </div>
                     <div>
                         Developed for Ludum Dare 34, where the theme was <b>Growing.</b>
@@ -1197,6 +1215,9 @@ class AboutState {
                         <a href="http://twitter.com/ehgoodenough" target="_blank">Code: @ehgoodenough</a>
                         <a href="http://twitter.com/madameberry" target="_blank">Art: @madameberry</a>
                         <a href="http://twitter.com/mcfunkypants" target="_blank">Sound: @mcfunkypants</a>
+                    </div>
+                    <div>
+                        We hope you enjoy the game!
                     </div>
                 </section>
             </div>
@@ -1319,8 +1340,6 @@ class ShoppingState {
                 if(game.gardener.gold - plant.price >= 0) {
                     game.gardener.gold -= plant.price
                     game.gardener.holding = plant
-                    game.gardener.animation = "spin"
-                    game.gardener.animating = 1000
                     game.gardener.seed = plant
                     game.cursor = 0
                     game.state = new FarmingState()
@@ -1340,6 +1359,7 @@ if(STAGE == "PRODUCTION") {
     game.state = new TitleState()
 } else if(STAGE == "DEVELOPMENT") {
     game.state = new FarmingState()
+    game.state = new AboutState()
     music.pause()
 }
 game.cursor = 0

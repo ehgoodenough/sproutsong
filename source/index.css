@@ -160,6 +160,8 @@ section {
         font-size: $font-size;
     }*/
 
+    padding: 32em;
+
     div {
         margin-bottom: 1em;
     }
