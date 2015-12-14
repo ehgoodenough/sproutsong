@@ -78,7 +78,7 @@ section {
                 background-image: url("./images/title.png");
 
                 border-width: 4em;
-                border-radius: 10em;
+                border-radius: 1em;
                 border-style: solid;
                 border-color: $red;
             }
@@ -105,6 +105,28 @@ section {
         bottom: 0em;
         position: absolute;
         background-image: url("./images/grass.png");
+    }
+
+    #controls {
+        left: 32em;
+        bottom: 32em;
+        position: absolute;
+        * {
+            font-size: $font-size;
+        }
+    }
+
+    #portrait {
+        right: 32em;
+        bottom: 32em;
+        width: 180em;
+        height: 180em;
+        color: $black;
+        position: absolute;
+        background-position: bottom right;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-image: url(./images/about.png);
     }
 }
 
